@@ -7,38 +7,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bitmap Lookup</title>
   <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       background: black;
       color: orange;
-      font-family: sans-serif;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.35;
     }
 
-    .center {
-      text-align: center;
-      padding: 20px;
-    }
-
-    #controls {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
+    .shell {
+      min-height: 100vh;
+      padding: 18px 14px 28px;
+      display: flex;
       justify-content: center;
     }
 
-    #bitmapNumber {
-      margin: 5px;
-      padding: 6px 10px;
-      min-width: 220px;
+    .wrap {
+      width: 100%;
+      max-width: 980px;
+    }
+
+    header {
+      text-align: left;
+      padding: 6px 2px 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .sub {
+      margin-top: 8px;
+      color: rgba(255, 165, 0, 0.75);
+      font-size: 0.95em;
+    }
+
+    .card {
+      border: 1px solid rgba(255, 165, 0, 0.35);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(255, 165, 0, 0.03);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: rgba(255, 165, 0, 0.75);
+      margin: 0 0 6px 2px;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 165, 0, 0.45);
+      background: rgba(0, 0, 0, 0.4);
+      color: orange;
+      outline: none;
+      font-size: 16px;
+    }
+
+    input:focus {
+      border-color: rgba(255, 165, 0, 0.85);
     }
 
     button {
       background: orange;
       color: white;
       border: none;
-      padding: 7px 14px;
+      padding: 10px 14px;
       cursor: pointer;
+      border-radius: 10px;
+      font-weight: 600;
+      min-width: 110px;
     }
 
     button:disabled {
@@ -46,12 +105,33 @@
       cursor: wait;
     }
 
+    button.loading::after {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-left: 10px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.55);
+      border-top-color: rgba(255, 255, 255, 1);
+      animation: spin 0.8s linear infinite;
+      vertical-align: -2px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: rgba(255, 165, 0, 0.75);
+      min-height: 18px;
+    }
+
     #result {
-      margin: 16px auto 0;
-      max-width: 1000px;
+      margin: 14px 0 0;
       text-align: left;
-      border: 1px solid rgba(255, 165, 0, 0.35);
-      padding: 12px;
     }
 
     #result a {
@@ -59,62 +139,138 @@
       text-decoration: underline;
     }
 
-    #visualizer {
-      width: 800px;
-      height: 800px;
-      margin: 20px auto;
-      position: relative;
-      border: 1px solid rgba(255, 165, 0, 0.35);
-    }
-
-    #inscriptionImage {
-      display: block;
-      max-width: 800px;
-      max-height: 800px;
-      width: 100%;
-      height: auto;
-      margin: 12px auto;
-      border: 1px solid rgba(255, 165, 0, 0.35);
-    }
-
-    .muted {
-      color: rgba(255, 165, 0, 0.75);
-      font-size: 0.95em;
-    }
-
-    .row {
+    .kv {
       display: grid;
-      grid-template-columns: 150px 1fr;
+      grid-template-columns: 120px 1fr;
       gap: 10px;
-      margin: 6px 0;
-      align-items: baseline;
+      padding: 8px 0;
+      border-top: 1px solid rgba(255, 165, 0, 0.20);
+    }
+
+    .kv:first-child {
+      border-top: none;
+      padding-top: 0;
     }
 
     .label {
       color: rgba(255, 165, 0, 0.75);
+      font-size: 13px;
+      padding-top: 2px;
+    }
+
+    .value {
+      min-width: 0;
     }
 
     .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      word-break: break-all;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .actions {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 165, 0, 0.35);
+      background: rgba(255, 165, 0, 0.05);
+      color: orange;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .pill:active {
+      transform: translateY(1px);
+    }
+
+    #visualizer {
+      width: min(92vw, 800px);
+      height: min(92vw, 800px);
+      margin: 16px auto 0;
+      position: relative;
+      border: 1px solid rgba(255, 165, 0, 0.35);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #inscriptionImage {
+      display: block;
+      width: min(92vw, 800px);
+      max-height: 70vh;
+      width: 100%;
+      height: auto;
+      margin: 14px auto 0;
+      border: 1px solid rgba(255, 165, 0, 0.35);
+      border-radius: 10px;
+      object-fit: contain;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+      }
+      #inscriptionImage,
+      #visualizer {
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="center">
-    <div id="controls">
-      <input type="text" id="bitmapNumber" placeholder="Enter bitmap / block number" />
-      <button id="loadBtn">Load</button>
-    </div>
+  <div class="shell">
+    <div class="wrap">
+      <header>
+        <h1>Bitmap Lookup</h1>
+        <div class="sub">
+          Pulls inscription ids from <span class="mono">bitmaps/&lt;start&gt;-&lt;end&gt;.json</span>, loads the bitmap image from ordinals.com, and renders the Mondrian pattern for the block.
+        </div>
+      </header>
 
-    <div class="muted" style="margin-top: 10px;">
-      Looks up inscription id from <span class="mono">bitmaps/&lt;start&gt;-&lt;end&gt;.json</span>, loads image from ordinals.com, and renders the Mondrian pattern for that block.
-    </div>
+      <div class="card">
+        <div class="controls">
+          <div class="field">
+            <label for="bitmapNumber">Bitmap / Block number</label>
+            <input type="number" id="bitmapNumber" placeholder="e.g. 940151" inputmode="numeric" min="0" step="1" />
+          </div>
+          <button id="loadBtn">Load</button>
+        </div>
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
 
-    <div id="result" style="display:none;"></div>
-    <img id="inscriptionImage" alt="Bitmap inscription" style="display:none;" />
-    <div id="visualizer"></div>
+      <div class="grid">
+        <div>
+          <div id="result" class="card" style="display:none;"></div>
+          <img id="inscriptionImage" alt="Bitmap inscription" style="display:none;" />
+        </div>
+        <div>
+          <div id="visualizer"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -129,6 +285,10 @@
 
     const $ = (id) => document.getElementById(id);
 
+    function setStatus(text) {
+      $('status').textContent = String(text || '');
+    }
+
     function setResult(html) {
       const el = $('result');
       el.innerHTML = html;
@@ -138,15 +298,18 @@
     function clearResult() {
       $('result').style.display = 'none';
       $('result').innerHTML = '';
+      setStatus('');
       $('inscriptionImage').style.display = 'none';
       $('inscriptionImage').src = '';
       $('visualizer').innerHTML = '';
     }
 
     function parseBitmapNumber(value) {
-      const trimmed = String(value || '').trim();
-      if (!trimmed) return null;
-      const n = Number.parseInt(trimmed, 10);
+      const raw = String(value || '').trim();
+      if (!raw) return null;
+      const m = raw.match(/\d+/);
+      if (!m) return null;
+      const n = Number.parseInt(m[0], 10);
       if (!Number.isFinite(n) || n < 0) return null;
       return n;
     }
@@ -194,6 +357,8 @@
       const container = $('visualizer');
       container.innerHTML = '';
 
+      const vizSize = Math.max(240, Math.floor(container.getBoundingClientRect().width || 800));
+
       const [block, module] = await Promise.all([
         fetch(`https://blockchain.info/rawblock/${blockNumber}?cors=true`).then(r => r.json()),
         getMondrianModule()
@@ -202,7 +367,7 @@
       const sizes = block.tx.map(tx => module.getSquareSize(tx.out.reduce((sum, out) => sum + out.value, 0)));
       const mondrian = new module.MondrianLayout(sizes);
 
-      const scale = Math.min(800 / mondrian.width, 800 / mondrian.height);
+      const scale = Math.min(vizSize / mondrian.width, vizSize / mondrian.height);
 
       mondrian.slots.forEach((slot, i) => {
         const div = document.createElement('div');
@@ -241,14 +406,16 @@
       const bitmapNumber = parseBitmapNumber(input.value);
 
       if (bitmapNumber === null) {
-        setResult('<div class="row"><div class="label">Error</div><div>Please enter a valid non-negative number.</div></div>');
+        setResult('<div class="kv"><div class="label">Error</div><div class="value">Please enter a valid non-negative number.</div></div>');
         return;
       }
 
       btn.disabled = true;
-      btn.textContent = 'Loading…';
+      btn.classList.add('loading');
+      btn.textContent = 'Loading';
 
       try {
+        setStatus('Loading bitmap id…');
         const start = Math.floor(bitmapNumber / CHUNK_SIZE) * CHUNK_SIZE;
         const idx = bitmapNumber - start;
 
@@ -258,25 +425,47 @@
         const contentUrl = inscriptionId ? `https://ordinals.com/content/${inscriptionId}` : null;
         const inscriptionUrl = inscriptionId ? `https://ordinals.com/inscription/${inscriptionId}` : null;
 
+        const escapedId = inscriptionId ? String(inscriptionId) : '';
+
         setResult([
-          `<div class="row"><div class="label">Bitmap</div><div class="mono">${bitmapNumber}</div></div>`,
-          `<div class="row"><div class="label">Chunk</div><div class="mono">${start}-${start + CHUNK_SIZE - 1}.json</div></div>`,
-          `<div class="row"><div class="label">Inscription</div><div class="mono">${inscriptionId ? `<a href="${inscriptionUrl}" target="_blank" rel="noreferrer">${inscriptionId}</a>` : 'null (missing)'}</div></div>`,
-          `<div class="row"><div class="label">Content</div><div class="mono">${contentUrl ? `<a href="${contentUrl}" target="_blank" rel="noreferrer">${contentUrl}</a>` : 'n/a'}</div></div>`,
+          `<div class="kv"><div class="label">Bitmap</div><div class="value mono">${bitmapNumber}</div></div>`,
+          `<div class="kv"><div class="label">Chunk</div><div class="value mono">${start}-${start + CHUNK_SIZE - 1}.json</div></div>`,
+          `<div class="kv"><div class="label">Inscription</div><div class="value mono">${inscriptionId ? `<a href="${inscriptionUrl}" target="_blank" rel="noreferrer">${escapedId}</a>` : 'null (missing)'}</div></div>`,
+          `<div class="kv"><div class="label">Content</div><div class="value mono">${contentUrl ? `<a href="${contentUrl}" target="_blank" rel="noreferrer">ordinals.com/content/…</a>` : 'n/a'}</div></div>`,
+          `${inscriptionId ? `<div class="actions"><button class="pill" id="copyBtn" type="button">Copy inscription id</button><a class="pill" href="${inscriptionUrl}" target="_blank" rel="noreferrer">Open on ordinals.com</a></div>` : ''}`
         ].join(''));
 
+        if (inscriptionId) {
+          const copyBtn = document.getElementById('copyBtn');
+          if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+              try {
+                await navigator.clipboard.writeText(String(inscriptionId));
+                setStatus('Copied inscription id.');
+              } catch {
+                setStatus('Copy failed (clipboard blocked).');
+              }
+            }, { once: true });
+          }
+        }
+
         if (contentUrl) {
+          setStatus('Loading inscription image…');
           const img = $('inscriptionImage');
           img.style.display = 'block';
           img.src = contentUrl;
         }
 
+        setStatus('Rendering Mondrian…');
         await renderMondrian(bitmapNumber);
+        setStatus('Done.');
       } catch (err) {
         console.error(err);
-        setResult(`<div class="row"><div class="label">Error</div><div>${String(err && err.message ? err.message : err)}</div></div>`);
+        setStatus('');
+        setResult(`<div class="kv"><div class="label">Error</div><div class="value">${String(err && err.message ? err.message : err)}</div></div>`);
       } finally {
         btn.disabled = false;
+        btn.classList.remove('loading');
         btn.textContent = 'Load';
       }
     }
@@ -285,6 +474,11 @@
     $('bitmapNumber').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') load();
     });
+
+    // Better mobile UX: focus input on load.
+    setTimeout(() => {
+      try { $('bitmapNumber').focus(); } catch { }
+    }, 50);
   </script>
 </body>
 
