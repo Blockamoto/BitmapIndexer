@@ -252,7 +252,9 @@
     $('loadBtn').addEventListener('click', load);
     $('bitmapNumber').addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
 
-    /* ── Meta / height indicators ────────────────────────── */
+    /* ── Meta / height indicators (auto-refresh every 30s) ── */
+    let lastKnownTip = null;
+
     async function loadMeta() {
       try {
         let meta;
@@ -263,9 +265,16 @@
         if (meta.maxBitmap != null) p.push(`<span>Indexed to: <b>${Number(meta.maxBitmap).toLocaleString()}</b></span>`);
         if (meta.updatedAt) p.push(`<span>Updated: <b>${new Date(meta.updatedAt).toLocaleString()}</b></span>`);
         $('heights').innerHTML = p.join('<span class="sep">|</span>');
+
+        // If tip changed, invalidate cached chunk so next lookup is fresh
+        if (lastKnownTip !== null && meta.ordTip !== lastKnownTip) {
+          chunkCache.clear();
+        }
+        lastKnownTip = meta.ordTip;
       } catch {}
     }
     loadMeta();
+    setInterval(loadMeta, 30000); // poll every 30 seconds
 
     if (!isMobile()) contentPanels.forEach(p => p.classList.remove('hidden'));
     setTimeout(() => { try { $('bitmapNumber').focus(); } catch {} }, 50);
