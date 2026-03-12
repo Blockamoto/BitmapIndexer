@@ -29,6 +29,15 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     #status { font-size: 11px; color: var(--dim); margin-top: 3px; min-height: 14px; }
 
+    /* ── Download range row ──────────────────────────────── */
+    .dl-range { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .dl-range label { font-size: 11px; color: var(--dim); }
+    .dl-range input { width: 100px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border); background: rgba(0,0,0,.4); color: var(--orange); font-size: 13px; outline: none; }
+    .dl-range input:focus { border-color: var(--orange); }
+    .dl-range button { background: var(--orange); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .dl-range button:disabled { opacity: .4; cursor: wait; }
+    #dlStatus { font-size: 11px; color: var(--dim); margin-left: 4px; }
+
     /* ── Content area: fills remaining viewport ──────────── */
     .content { flex: 1 1 0; min-height: 0; display: flex; gap: 8px; overflow: hidden; }
 
@@ -81,6 +90,14 @@
         <button id="loadBtn">Load</button>
       </div>
       <div id="status" aria-live="polite"></div>
+      <div class="dl-range">
+        <label>Download range:</label>
+        <input type="number" id="dlFrom" placeholder="From" inputmode="numeric" min="0" step="1" />
+        <span style="color:var(--dim)">–</span>
+        <input type="number" id="dlTo" placeholder="To" inputmode="numeric" min="0" step="1" />
+        <button id="dlBtn">Download JSON</button>
+        <span id="dlStatus"></span>
+      </div>
     </div>
 
     <div class="tabs" id="tabBar">
@@ -321,6 +338,56 @@
 
     $('loadBtn').addEventListener('click', load);
     $('bitmapNumber').addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
+
+    /* ── Download range as JSON ──────────────────────────── */
+    async function downloadRange() {
+      const from = parseNum($('dlFrom').value);
+      const to   = parseNum($('dlTo').value);
+      const dlSt = $('dlStatus');
+      dlSt.textContent = '';
+
+      if (from === null || to === null) { dlSt.textContent = 'Enter valid start and end numbers.'; return; }
+      if (from > to) { dlSt.textContent = '"From" must be ≤ "To".'; return; }
+      const MAX_RANGE = 1000000;
+      if (to - from + 1 > MAX_RANGE) { dlSt.textContent = `Range too large (max ${MAX_RANGE.toLocaleString()}).`; return; }
+
+      const btn = $('dlBtn');
+      btn.disabled = true; btn.textContent = 'Downloading…';
+
+      try {
+        const startChunk = Math.floor(from / CHUNK) * CHUNK;
+        const endChunk   = Math.floor(to   / CHUNK) * CHUNK;
+        const needed = [];
+        for (let s = startChunk; s <= endChunk; s += CHUNK) needed.push(s);
+
+        dlSt.textContent = `Loading ${needed.length} chunk(s)…`;
+        const chunks = await Promise.all(needed.map(s => loadChunk(s)));
+
+        const result = {};
+        for (let n = from; n <= to; n++) {
+          const cs = Math.floor(n / CHUNK) * CHUNK;
+          const ci = needed.indexOf(cs);
+          const id = chunks[ci][n - cs] || null;
+          result[n] = id;
+        }
+
+        const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.download = `bitmaps-${from}-${to}.json`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        dlSt.textContent = `Downloaded ${(to - from + 1).toLocaleString()} entries.`;
+      } catch (err) {
+        console.error(err);
+        dlSt.textContent = `Error: ${err?.message || err}`;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Download JSON';
+      }
+    }
+
+    $('dlBtn').addEventListener('click', downloadRange);
 
     /* ── Meta / height indicators (auto-refresh every 30s) ── */
     let lastKnownTip = null;
