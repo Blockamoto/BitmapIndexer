@@ -739,7 +739,7 @@
         '<div class="mints-section">' +
           '<div class="mints-heading">Mint History (' + (currentDeployGallery ? fmt(currentDeployGallery.count) : '0') + ')</div>' +
           '<table class="mints-table">' +
-            '<thead><tr><th>#</th><th>Inscription ID</th><th>Wallet</th><th>Block</th></tr></thead>' +
+            '<thead><tr><th>#</th><th>Inscription ID</th></tr></thead>' +
             '<tbody id="mintsBody"></tbody>' +
           '</table>' +
           '<button class="btn-more" id="loadMoreMints" onclick="loadMoreMints()" style="display:none">Load More</button>' +
@@ -757,13 +757,11 @@
       if (!tbody) return;
 
       for (var i = start; i < end; i++) {
-        var m = items[i];
+        var id = items[i];
         var tr = document.createElement('tr');
         tr.innerHTML =
           '<td>' + (i + 1) + '</td>' +
-          '<td class="td-id"><a href="https://ordinals.com/inscription/' + m.inscriptionId + '" target="_blank" title="' + m.inscriptionId + '">' + trunc(m.inscriptionId, 14, 8) + '</a></td>' +
-          '<td class="td-addr" title="' + (m.attributes && m.attributes.wallet || '') + '">' + trunc(m.attributes && m.attributes.wallet || '—', 14, 6) + '</td>' +
-          '<td>' + fmt(m.attributes && m.attributes.block_height) + '</td>';
+          '<td class="td-id"><a href="https://ordinals.com/inscription/' + id + '" target="_blank" title="' + id + '">' + trunc(id, 14, 8) + '</a></td>';
         tbody.appendChild(tr);
       }
 
