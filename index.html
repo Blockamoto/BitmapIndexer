@@ -134,12 +134,32 @@
       border-color: rgba(0,212,255,0.25);
       background: rgba(0,212,255,0.06);
     }
+    .topnav__links {
+      display: flex; gap: 6px; margin-left: auto; margin-right: 12px;
+    }
+    .topnav__link {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 20px;
+      text-decoration: none; white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #6a8da8;
+      background: rgba(255,255,255,0.02);
+      transition: var(--ease);
+    }
+    .topnav__link:hover {
+      color: #fff;
+      border-color: rgba(0,212,255,0.35);
+      background: rgba(0,212,255,0.08);
+      box-shadow: 0 0 12px rgba(0,212,255,0.15);
+    }
+    .topnav__link svg { width: 12px; height: 12px; fill: currentColor; opacity: 0.6; }
     .topnav .meta {
       display: flex; gap: 10px; flex-wrap: wrap;
       font-family: var(--font-mono);
       font-size: 0.65rem;
       color: #3a5060;
-      margin-left: auto;
     }
     .topnav .meta b { color: var(--btm-accent); font-weight: 600; }
     .topnav .meta .sep { opacity: .25; }
@@ -664,6 +684,7 @@
       .topnav { padding: 0 1rem; }
       .topnav h1 { font-size: 0.8rem; margin-right: 0.8rem; }
       .topnav .meta { display: none; }
+      .topnav__links { margin-left: auto; }
       .bm-content { padding: 8px 1rem 10px; }
       .brc-stats { grid-template-columns: repeat(2, 1fr); }
       .deploy-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
@@ -685,6 +706,16 @@
       <div class="nav-tabs">
         <button class="nav-tab active" data-page="bitmap">Bitmap</button>
         <button class="nav-tab" data-page="brc420">BRC-420</button>
+      </div>
+      <div class="topnav__links">
+        <a class="topnav__link" href="https://ord.io" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm.9 12.2H7.1V7h1.8v5.2zm0-6.4H7.1V4h1.8v1.8z"/></svg>
+          ord.io
+        </a>
+        <a class="topnav__link" href="https://ordinals.com" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16"><path d="M8.5 1.5l5.7 3.3v6.4L8.5 14.5 2.8 11.2V4.8L8.5 1.5z"/></svg>
+          ordinals.com
+        </a>
       </div>
       <div class="meta" id="heights"></div>
     </div>
