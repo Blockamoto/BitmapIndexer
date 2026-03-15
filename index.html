@@ -321,7 +321,8 @@
         const beyondIndex = !id && lastKnownMaxBitmap !== null && num > lastKnownMaxBitmap;
 
         // Parcel data for this bitmap: array of [parcelNumber, inscriptionId]
-        const parcels = parcelChunk[num] || [];
+        // Only show parcels when the bitmap is actually inscribed (uninscribed bitmaps can't have children)
+        const parcels = id ? (parcelChunk[num] || []) : [];
         const parcelSet = new Set(parcels.map(p => p[0])); // tx indices that are parcels
 
         let inscriptionHtml;
