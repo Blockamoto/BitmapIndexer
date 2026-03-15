@@ -148,6 +148,11 @@
     .btn-more { display: block; margin: 8px auto; background: var(--card); color: var(--orange); border: 1px solid var(--border); padding: 6px 20px; border-radius: 6px; font-size: 12px; cursor: pointer; }
     .btn-more:hover { border-color: var(--orange); }
     .btn-more:disabled { opacity: .4; cursor: wait; }
+
+    /* ── Warning banner ──────────────────────────────────── */
+    .warning-banner { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,193,7,.35); background: rgba(255,193,7,.06); font-size: 12px; line-height: 1.45; color: #e0c060; }
+    .warning-banner__icon { flex-shrink: 0; font-size: 16px; line-height: 1; }
+    .warning-banner b { color: #ffd54f; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -201,6 +206,10 @@
     <!-- ── BRC-420 PAGE ─────────────────────────────── -->
     <!-- ══════════════════════════════════════════════════ -->
     <div class="page" id="pageBrc420">
+      <div class="warning-banner">
+        <span class="warning-banner__icon">⚠️</span>
+        <span><b>Verification in progress</b> — Collection details and mint counts are still being verified. Some mints may not yet appear while payment and content-type validation is being refined. Data shown here may be incomplete.</span>
+      </div>
       <div class="brc-stats" id="brcStats"></div>
       <div class="brc-filter-row">
         <div class="filter-tabs" id="filterTabs">
