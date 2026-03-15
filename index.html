@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
   <title>Bitmap Lookup</title>
   <style>
-    :root { color-scheme: dark; --orange: #ffa500; --dim: rgba(255,165,0,.65); --border: rgba(255,165,0,.25); --card: rgba(255,165,0,.03); }
+    :root { color-scheme: dark; --orange: #ffa500; --dim: rgba(255,165,0,.65); --border: rgba(255,165,0,.25); --card: rgba(255,165,0,.03); --cyan: #00e5ff; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
     body { background: #000; color: var(--orange); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.35; }
@@ -122,6 +122,7 @@
     const MONDRIAN_ID = '55551557695dd82a2bda5ec3497684ec7cbb2cc1752ff5101accff1648666c3ai0';
     const RAW_GH = 'https://raw.githubusercontent.com/switch-900/BitmapIndexer/main/';
     const chunkCache = new Map();
+    const parcelChunkCache = new Map();
     let modPromise = null;
     const $ = id => document.getElementById(id);
 
@@ -170,6 +171,23 @@
       catch { const d = await fetchJson(`${RAW_GH}${file}`); chunkCache.set(start, d); return d; }
     }
 
+    async function loadParcelChunk(start) {
+      if (parcelChunkCache.has(start)) return parcelChunkCache.get(start);
+      const file = `parcels/${start}-${start + CHUNK - 1}.json`;
+      try {
+        let d;
+        try { d = await fetchJson(`./${file}`); }
+        catch { d = await fetchJson(`${RAW_GH}${file}`); }
+        parcelChunkCache.set(start, d);
+        return d;
+      } catch {
+        // No parcel chunk for this range — that's fine
+        const empty = {};
+        parcelChunkCache.set(start, empty);
+        return empty;
+      }
+    }
+
     async function getMod() {
       if (modPromise) return modPromise;
       modPromise = (async () => {
@@ -183,7 +201,7 @@
     // Stores the last rendered layout so we can hit-test on hover and export.
     let lastLayout = null;   // { slots, scale, ox, oy, pw, ph, canvas, blockNum }
 
-    async function renderMondrian(blockNum) {
+    async function renderMondrian(blockNum, parcelSet) {
       const c = $('visualizer');
       c.innerHTML = '';
       $('vizPlaceholder').style.display = 'none';
@@ -227,26 +245,26 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, pw, ph);
 
-      // Draw each slot
+      // Draw each slot — cyan for parcels, orange otherwise
       const gap = 0.5;
-      mondrian.slots.forEach(slot => {
+      mondrian.slots.forEach((slot, i) => {
         const sx = slot.position.x * scale;
         const sy = slot.position.y * scale;
         const ss = (slot.size - gap) * scale;
-        ctx.fillStyle = 'orange';
+        ctx.fillStyle = (parcelSet && parcelSet.has(i)) ? '#00e5ff' : 'orange';
         ctx.fillRect(sx, sy, ss, ss);
       });
 
       c.appendChild(canvas);
 
-      lastLayout = { slots: mondrian.slots, scale, ox, oy, pw, ph, canvas, blockNum };
+      lastLayout = { slots: mondrian.slots, scale, ox, oy, pw, ph, canvas, blockNum, parcelSet };
     }
 
     /* ── Canvas hover tooltip ─────────────────────────────── */
     const tooltip = $('vizTooltip');
     $('panelBitmap').addEventListener('mousemove', e => {
       if (!lastLayout) return;
-      const { slots, scale, canvas } = lastLayout;
+      const { slots, scale, canvas, parcelSet } = lastLayout;
       const cr = canvas.getBoundingClientRect();
       const mx = e.clientX - cr.left;
       const my = e.clientY - cr.top;
@@ -257,7 +275,8 @@
         const sy = s.position.y * scale;
         const ss = (s.size - gap) * scale;
         if (mx >= sx && mx <= sx + ss && my >= sy && my <= sy + ss) {
-          tooltip.textContent = `tx #${i}`;
+          const isParcel = parcelSet && parcelSet.has(i);
+          tooltip.textContent = isParcel ? `tx #${i} • parcel` : `tx #${i}`;
           tooltip.style.display = 'block';
           tooltip.style.left = `${e.clientX + 12}px`;
           tooltip.style.top  = `${e.clientY - 8}px`;
@@ -293,10 +312,17 @@
       try {
         setStatus('Fetching bitmap index…');
         const start = Math.floor(num / CHUNK) * CHUNK;
-        const chunk = await loadChunk(start);
+        const [chunk, parcelChunk] = await Promise.all([
+          loadChunk(start),
+          loadParcelChunk(start)
+        ]);
         const id = chunk[num - start] || null;
         const inscUrl = id ? `https://ordinals.com/inscription/${id}` : null;
         const beyondIndex = !id && lastKnownMaxBitmap !== null && num > lastKnownMaxBitmap;
+
+        // Parcel data for this bitmap: array of [parcelNumber, inscriptionId]
+        const parcels = parcelChunk[num] || [];
+        const parcelSet = new Set(parcels.map(p => p[0])); // tx indices that are parcels
 
         let inscriptionHtml;
         if (id) {
@@ -307,9 +333,22 @@
           inscriptionHtml = `<span style="color:var(--dim)">null — not yet inscribed</span>`;
         }
 
+        // Build parcels section for info panel
+        let parcelsHtml = '';
+        if (parcels.length > 0) {
+          const MAX_SHOW = 20;
+          const parcelRows = parcels.slice(0, MAX_SHOW).map(([pn, pid]) => {
+            const pUrl = `https://ordinals.com/inscription/${pid}`;
+            return `<div style="font-size:11px;margin:2px 0"><span style="color:var(--cyan);font-weight:600">#${pn}</span> <a href="${pUrl}" target="_blank" class="mono" style="font-size:10px">${pid.slice(0, 12)}…</a></div>`;
+          }).join('');
+          const moreText = parcels.length > MAX_SHOW ? `<div style="font-size:11px;color:var(--dim)">…and ${parcels.length - MAX_SHOW} more</div>` : '';
+          parcelsHtml = `<div class="kv"><div class="label" style="color:var(--cyan)">Parcels (${parcels.length})</div><div class="value">${parcelRows}${moreText}</div></div>`;
+        }
+
         $('result').innerHTML = [
           `<div class="kv"><div class="label">Bitmap</div><div class="value mono">${num}</div></div>`,
           `<div class="kv"><div class="label">Inscription</div><div class="value mono">${inscriptionHtml}</div></div>`,
+          parcelsHtml,
           `<div class="actions">${id ? `<button class="pill" id="copyBtn">Copy id</button><a class="pill" href="${inscUrl}" target="_blank">ordinals.com</a>` : ''}<button class="pill" id="savePngBtn">Save PNG</button></div>`
         ].join('');
 
@@ -321,7 +360,7 @@
         }
 
         setStatus('Rendering bitmap pattern…');
-        await renderMondrian(num);
+        await renderMondrian(num, parcelSet.size > 0 ? parcelSet : null);
 
         $('savePngBtn')?.addEventListener('click', () => saveBitmapPNG(), { once: true });
 
@@ -425,6 +464,7 @@
         // If tip changed, invalidate cached chunk so next lookup is fresh
         if (lastKnownTip !== null && meta.ordTip !== lastKnownTip) {
           chunkCache.clear();
+          parcelChunkCache.clear();
         }
         lastKnownTip = meta.ordTip;
         lastKnownMaxBitmap = meta.maxBitmap ?? null;
