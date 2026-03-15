@@ -395,9 +395,11 @@
 
     /* ── Deploy card grid ────────────────────────────────── */
     .deploy-grid {
-      flex: 1 1 0; min-height: 0; overflow-y: auto;
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-      gap: 0.9rem; padding: 4px 2px; align-content: start;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+      padding: 1rem 2px 2rem;
+      align-content: start;
     }
     .deploy-card {
       display: flex; flex-direction: column; gap: 8px;
@@ -405,11 +407,13 @@
       border-radius: var(--radius-lg);
       background: var(--brc-card);
       padding: 12px;
+      min-height: 340px;
       cursor: pointer;
       transition: var(--ease);
       text-decoration: none;
       color: var(--brc-text);
       position: relative; overflow: hidden;
+      box-shadow: 0 0 12px rgba(0,212,255,0.04), 0 4px 20px rgba(0,0,0,0.3);
     }
     .deploy-card::before {
       content: '';
@@ -420,7 +424,7 @@
     }
     .deploy-card:hover {
       border-color: rgba(0,212,255,0.35);
-      box-shadow: var(--brc-glow-md), 0 8px 32px rgba(0,0,0,0.5);
+      box-shadow: var(--brc-glow-lg), 0 8px 32px rgba(0,0,0,0.5);
       transform: translateY(-2px);
     }
     .deploy-card:hover::before { opacity: 0.9; }
