@@ -4,22 +4,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-  <title>Bitmap Lookup</title>
+  <title>Bitmap420 Explorer</title>
   <style>
-    :root { color-scheme: dark; --orange: #ffa500; --dim: rgba(255,165,0,.65); --border: rgba(255,165,0,.25); --card: rgba(255,165,0,.03); --cyan: #00e5ff; }
+    :root { color-scheme: dark; --orange: #ffa500; --dim: rgba(255,165,0,.65); --border: rgba(255,165,0,.25); --card: rgba(255,165,0,.03); --cyan: #00e5ff; --purple: #b388ff; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
     body { background: #000; color: var(--orange); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.35; }
+    a { color: var(--orange); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; word-break: break-word; overflow-wrap: anywhere; font-size: 12px; }
 
-    /* ── App: full viewport, no scroll ───────────────────── */
-    .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: 10px 12px 8px; gap: 6px; max-width: 960px; margin: 0 auto; }
+    /* ── App shell ───────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; max-width: 960px; margin: 0 auto; }
 
-    /* ── Top bar ─────────────────────────────────────────── */
-    .top { flex: 0 0 auto; }
-    .top h1 { font-size: 16px; letter-spacing: .2px; }
-    .meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin: 4px 0 6px; }
-    .meta b { color: var(--orange); font-weight: 600; }
-    .meta .sep { opacity: .35; }
+    /* ── Top nav bar ─────────────────────────────────────── */
+    .topnav { display: flex; align-items: center; gap: 0; padding: 6px 12px 0; flex: 0 0 auto; }
+    .topnav h1 { font-size: 15px; letter-spacing: .2px; margin-right: 16px; white-space: nowrap; }
+    .nav-tabs { display: flex; gap: 2px; }
+    .nav-tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-bottom: none; padding: 6px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 8px 8px 0 0; transition: color .15s, background .15s; }
+    .nav-tab.active { background: var(--card); color: var(--orange); border-color: var(--orange); }
+    .nav-tab:hover:not(.active) { color: var(--orange); }
+    .topnav .meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin-left: auto; }
+    .topnav .meta b { color: var(--orange); font-weight: 600; }
+    .topnav .meta .sep { opacity: .35; }
+
+    /* ── Page containers ─────────────────────────────────── */
+    .page { display: none; flex: 1 1 0; min-height: 0; flex-direction: column; padding: 6px 12px 8px; gap: 6px; overflow: hidden; }
+    .page.active { display: flex; }
+
+    /* ── Shared components ────────────────────────────────── */
     .search { display: flex; gap: 8px; }
     .search input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,.4); color: var(--orange); font-size: 16px; outline: none; }
     .search input:focus { border-color: var(--orange); }
@@ -27,7 +39,10 @@
     .search button:disabled { opacity: .4; cursor: wait; }
     .search button.loading::after { content: ''; display: inline-block; width: 10px; height: 10px; margin-left: 8px; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); border-top-color: #fff; animation: spin .7s linear infinite; vertical-align: -1px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #status { font-size: 11px; color: var(--dim); margin-top: 3px; min-height: 14px; }
+    .status-line { font-size: 11px; color: var(--dim); min-height: 14px; }
+    .pill { padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,165,0,.05); color: var(--orange); font-size: 11px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .pill:active { transform: translateY(1px); }
+    .empty { display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; color: var(--dim); font-size: 13px; text-align: center; padding: 20px; }
 
     /* ── Download range row ──────────────────────────────── */
     .dl-range { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
@@ -38,58 +53,124 @@
     .dl-range button:disabled { opacity: .4; cursor: wait; }
     #dlStatus { font-size: 11px; color: var(--dim); margin-left: 4px; }
 
-    /* ── Content area: fills remaining viewport ──────────── */
-    .content { flex: 1 1 0; min-height: 0; display: flex; gap: 8px; overflow: hidden; }
-
-    /* ── Info column ─────────────────────────────────────── */
+    /* ── Bitmap content area ─────────────────────────────── */
+    .bm-content { flex: 1 1 0; min-height: 0; display: flex; gap: 8px; overflow: hidden; }
     .info { flex: 0 0 260px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--card); padding: 10px; }
     .kv { display: grid; grid-template-columns: 90px 1fr; gap: 4px 8px; padding: 6px 0; border-top: 1px solid rgba(255,165,0,.12); font-size: 13px; }
     .kv:first-child { border-top: none; padding-top: 0; }
     .label { color: var(--dim); font-size: 11px; }
     .value { min-width: 0; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; word-break: break-word; overflow-wrap: anywhere; font-size: 12px; }
-    a { color: var(--orange); }
     .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-    .pill { padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,165,0,.05); color: var(--orange); font-size: 11px; cursor: pointer; text-decoration: none; }
-    .pill:active { transform: translateY(1px); }
-
-    /* ── Bitmap (Mondrian) column ────────────────────────── */
-    .bitmap { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 10px; background: var(--card); overflow: hidden; position: relative; }
+    .bitmap-vis { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 10px; background: var(--card); overflow: hidden; position: relative; }
     #visualizer { position: absolute; inset: 0; }
     #vizCanvas { display: block; position: absolute; }
     .viz-tooltip { position: fixed; pointer-events: none; background: rgba(0,0,0,.85); color: var(--orange); font-size: 11px; padding: 3px 7px; border-radius: 4px; border: 1px solid var(--border); white-space: nowrap; z-index: 10; display: none; }
 
-    /* Placeholder */
-    .empty { display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; color: var(--dim); font-size: 13px; text-align: center; padding: 20px; }
-
-    /* ── Mobile: stack vertically, tabs ──────────────────── */
-    .tabs { display: none; flex: 0 0 auto; gap: 0; }
-    .tabs button { flex: 1; background: transparent; color: var(--dim); border: 1px solid var(--border); border-bottom: none; padding: 5px 0; font-size: 12px; cursor: pointer; border-radius: 8px 8px 0 0; }
-    .tabs button.active { background: var(--card); color: var(--orange); font-weight: 600; }
-
+    /* ── Mobile bitmap tabs ──────────────────────────────── */
+    .bm-tabs { display: none; flex: 0 0 auto; gap: 0; }
+    .bm-tabs button { flex: 1; background: transparent; color: var(--dim); border: 1px solid var(--border); border-bottom: none; padding: 5px 0; font-size: 12px; cursor: pointer; border-radius: 8px 8px 0 0; }
+    .bm-tabs button.active { background: var(--card); color: var(--orange); font-weight: 600; }
     @media (max-width: 639px) {
-      .content { flex-direction: column; }
+      .bm-content { flex-direction: column; }
       .info { flex: 1 1 0; min-height: 0; }
-      .bitmap { flex: 1 1 0; min-height: 0; }
-      .tabs { display: flex; }
-      .content > .hidden { display: none; }
+      .bitmap-vis { flex: 1 1 0; min-height: 0; }
+      .bm-tabs { display: flex; }
+      .bm-content > .hidden { display: none; }
     }
     @media (min-width: 640px) {
-      .tabs { display: none; }
-      .content > .hidden { display: flex; }
+      .bm-tabs { display: none; }
+      .bm-content > .hidden { display: flex; }
     }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* ── BRC-420 PAGE ─────────────────────────────────── */
+    /* ══════════════════════════════════════════════════════ */
+    .brc-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+    .brc-stat { padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); font-size: 12px; }
+    .brc-stat b { color: var(--purple); font-weight: 700; }
+
+    .brc-filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filter-tabs { display: flex; gap: 2px; }
+    .filter-tab { background: transparent; color: var(--dim); border: 1px solid var(--border); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 6px; transition: color .15s, background .15s; }
+    .filter-tab.active { background: rgba(179,136,255,.12); color: var(--purple); border-color: var(--purple); }
+    .filter-tab:hover:not(.active) { color: var(--orange); }
+    .filter-tab .badge { font-size: 9px; opacity: .7; margin-left: 4px; }
+
+    .deploy-grid { flex: 1 1 0; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 2px; align-content: start; }
+    .deploy-card { border: 1px solid var(--border); border-radius: 10px; background: var(--card); padding: 10px; cursor: pointer; transition: border-color .15s, transform .1s; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 6px; }
+    .deploy-card:hover { border-color: var(--purple); transform: translateY(-1px); }
+    .deploy-card__preview { width: 100%; aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: #111; display: flex; align-items: center; justify-content: center; }
+    .deploy-card__preview iframe { width: 100%; height: 100%; border: none; pointer-events: none; }
+    .deploy-card__name { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .deploy-card__badge { font-size: 9px; font-weight: 700; border-radius: 4px; padding: 1px 5px; display: inline-block; flex-shrink: 0; }
+    .deploy-card__badge--minted { color: #4caf50; border: 1px solid #4caf50; }
+    .deploy-card__badge--active { color: var(--purple); border: 1px solid var(--purple); }
+    .deploy-card__row { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); }
+    .deploy-card__row b { color: var(--orange); font-weight: 600; }
+    .progress-track { height: 4px; border-radius: 2px; background: rgba(255,165,0,.15); margin-top: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 2px; background: var(--purple); transition: width .3s; }
+
+    /* ── Deploy detail view ──────────────────────────────── */
+    .deploy-detail { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 2px; display: none; }
+    .deploy-detail.active { display: block; }
+    .deploy-grid.hidden { display: none; }
+    .dd-back { font-size: 12px; color: var(--dim); cursor: pointer; margin-bottom: 8px; display: inline-block; }
+    .dd-back:hover { color: var(--orange); }
+    .dd-hero { display: flex; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+    .dd-preview { width: 180px; height: 180px; border-radius: 10px; overflow: hidden; background: #111; flex-shrink: 0; }
+    .dd-preview iframe { width: 100%; height: 100%; border: none; }
+    .dd-meta { flex: 1; min-width: 200px; }
+    .dd-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .dd-id { font-size: 10px; color: var(--dim); word-break: break-all; margin-bottom: 8px; }
+    .dd-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .dd-stat { padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); }
+    .dd-stat__label { font-size: 10px; color: var(--dim); }
+    .dd-stat__value { font-size: 14px; font-weight: 700; }
+    .dd-progress { margin-top: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+    .dd-progress__header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+    .dd-progress__track { height: 6px; border-radius: 3px; background: rgba(255,165,0,.15); overflow: hidden; }
+    .dd-progress__fill { height: 100%; border-radius: 3px; background: var(--purple); }
+    .dd-progress__labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--dim); margin-top: 3px; }
+    .dd-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .btn-dl { background: var(--purple); color: #fff; border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-dl:hover { filter: brightness(1.15); }
+
+    /* Mints table */
+    .mints-section { margin-top: 12px; }
+    .mints-heading { font-size: 14px; font-weight: 700; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+    .mints-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .mints-table th { text-align: left; color: var(--dim); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--border); font-size: 10px; position: sticky; top: 0; background: #000; }
+    .mints-table td { padding: 3px 6px; border-bottom: 1px solid rgba(255,165,0,.06); }
+    .mints-table .td-id { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mints-table .td-addr { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mints-table a { color: var(--orange); text-decoration: none; }
+    .mints-table a:hover { text-decoration: underline; }
+    .btn-more { display: block; margin: 8px auto; background: var(--card); color: var(--orange); border: 1px solid var(--border); padding: 6px 20px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-more:hover { border-color: var(--orange); }
+    .btn-more:disabled { opacity: .4; cursor: wait; }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="top">
-      <h1>Bitmap Lookup</h1>
+    <!-- ── Top navigation ─────────────────────────────── -->
+    <div class="topnav">
+      <h1>Bitmap420</h1>
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-page="bitmap">Bitmap</button>
+        <button class="nav-tab" data-page="brc420">BRC-420</button>
+      </div>
       <div class="meta" id="heights"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- ── BITMAP PAGE ──────────────────────────────── -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="page active" id="pageBitmap">
       <div class="search">
         <input type="number" id="bitmapNumber" placeholder="Block / bitmap number" inputmode="numeric" min="0" step="1" />
         <button id="loadBtn">Load</button>
       </div>
-      <div id="status" aria-live="polite"></div>
+      <div class="status-line" id="status" aria-live="polite"></div>
       <div class="dl-range">
         <label>Download range:</label>
         <input type="number" id="dlFrom" placeholder="From" inputmode="numeric" min="0" step="1" />
@@ -98,26 +179,54 @@
         <button id="dlBtn">Download JSON</button>
         <span id="dlStatus"></span>
       </div>
+
+      <div class="bm-tabs" id="bmTabBar">
+        <button class="active" data-bmtab="info">Info</button>
+        <button data-bmtab="bitmap">Bitmap</button>
+      </div>
+
+      <div class="bm-content">
+        <div class="info" id="panelInfo" data-bmname="info">
+          <div id="result"><div class="empty">Enter a bitmap number above</div></div>
+        </div>
+        <div class="bitmap-vis hidden" id="panelBitmap" data-bmname="bitmap">
+          <div class="empty" id="vizPlaceholder">Bitmap pattern will appear here</div>
+          <div id="visualizer"></div>
+          <div class="viz-tooltip" id="vizTooltip"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="tabs" id="tabBar">
-      <button class="active" data-tab="info">Info</button>
-      <button data-tab="bitmap">Bitmap</button>
-    </div>
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- ── BRC-420 PAGE ─────────────────────────────── -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="page" id="pageBrc420">
+      <div class="brc-stats" id="brcStats"></div>
+      <div class="brc-filter-row">
+        <div class="filter-tabs" id="filterTabs">
+          <button class="filter-tab active" data-filter="all">All <span class="badge" id="countAll"></span></button>
+          <button class="filter-tab" data-filter="minted-out">Minted Out <span class="badge" id="countMinted"></span></button>
+          <button class="filter-tab" data-filter="active">Active <span class="badge" id="countActive"></span></button>
+        </div>
+        <div class="search" style="flex:1;min-width:180px;">
+          <input type="text" id="brcSearch" placeholder="Search deploy name or inscription ID…" style="font-size:13px;padding:6px 10px;" />
+        </div>
+      </div>
 
-    <div class="content">
-      <div class="info" id="panelInfo" data-name="info">
-        <div id="result"><div class="empty">Enter a bitmap number above</div></div>
+      <!-- Deploy grid (listing) -->
+      <div class="deploy-grid" id="deployGrid">
+        <div class="empty" style="grid-column:1/-1">Loading deploys…</div>
       </div>
-      <div class="bitmap hidden" id="panelBitmap" data-name="bitmap">
-        <div class="empty" id="vizPlaceholder">Bitmap pattern will appear here</div>
-        <div id="visualizer"></div>
-        <div class="viz-tooltip" id="vizTooltip"></div>
-      </div>
+
+      <!-- Deploy detail (single view) -->
+      <div class="deploy-detail" id="deployDetail"></div>
     </div>
   </div>
 
   <script>
+    /* ══════════════════════════════════════════════════════ */
+    /* ── SHARED ──────────────────────────────────────── */
+    /* ══════════════════════════════════════════════════════ */
     const CHUNK = 100000;
     const MONDRIAN_ID = '55551557695dd82a2bda5ec3497684ec7cbb2cc1752ff5101accff1648666c3ai0';
     const RAW_GH = 'https://raw.githubusercontent.com/switch-900/BitmapIndexer/main/';
@@ -125,64 +234,77 @@
     const parcelChunkCache = new Map();
     let modPromise = null;
     const $ = id => document.getElementById(id);
+    const fmt = n => n != null ? Number(n).toLocaleString() : '—';
+    const trunc = (s, a = 12, b = 8) => s && s.length > a + b ? s.slice(0, a) + '…' + s.slice(-b) : (s || '—');
 
-    /* ── Tabs (mobile) ───────────────────────────────────── */
-    const tabBtns = document.querySelectorAll('.tabs button');
-    const contentPanels = document.querySelectorAll('.content > *');
-    const isMobile = () => window.innerWidth < 640;
+    async function fetchJson(url) {
+      const r = await fetch(url, { cache: 'no-cache' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    function switchTab(name) {
-      tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-      contentPanels.forEach(p => {
-        if (isMobile()) p.classList.toggle('hidden', p.dataset.name !== name);
+    /* ── Top-level page navigation ──────────────────────── */
+    var navTabs = document.querySelectorAll('.nav-tab');
+    var pages = document.querySelectorAll('.page');
+    var deploysLoaded = false;
+    function switchPage(name) {
+      navTabs.forEach(function(b) { b.classList.toggle('active', b.dataset.page === name); });
+      pages.forEach(function(p) { p.classList.toggle('active', p.id === ('page' + name.charAt(0).toUpperCase() + name.slice(1))); });
+      if (name === 'brc420' && !deploysLoaded) loadDeploys();
+    }
+    navTabs.forEach(function(b) { b.addEventListener('click', function() { switchPage(b.dataset.page); }); });
+
+    /* ══════════════════════════════════════════════════════ */
+    /* ── BITMAP PAGE ──────────────────────────────────── */
+    /* ══════════════════════════════════════════════════════ */
+
+    var bmTabBtns = document.querySelectorAll('.bm-tabs button');
+    var bmPanels = document.querySelectorAll('.bm-content > *');
+    var isMobile = function() { return window.innerWidth < 640; };
+
+    function switchBmTab(name) {
+      bmTabBtns.forEach(function(b) { b.classList.toggle('active', b.dataset.bmtab === name); });
+      bmPanels.forEach(function(p) {
+        if (isMobile()) p.classList.toggle('hidden', p.dataset.bmname !== name);
         else p.classList.remove('hidden');
       });
     }
-    tabBtns.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-    window.addEventListener('resize', () => { if (!isMobile()) contentPanels.forEach(p => p.classList.remove('hidden')); });
+    bmTabBtns.forEach(function(b) { b.addEventListener('click', function() { switchBmTab(b.dataset.bmtab); }); });
+    window.addEventListener('resize', function() { if (!isMobile()) bmPanels.forEach(function(p) { p.classList.remove('hidden'); }); });
 
-    /* ── Helpers ──────────────────────────────────────────── */
     function setStatus(t) { $('status').textContent = String(t || ''); }
-
     function clearAll() {
       setStatus('');
       $('result').innerHTML = '<div class="empty">Enter a bitmap number above</div>';
       $('visualizer').innerHTML = '';
       $('vizPlaceholder').style.display = '';
     }
-
     function parseNum(v) {
-      const m = String(v || '').trim().match(/\d+/);
+      var m = String(v || '').trim().match(/\d+/);
       if (!m) return null;
-      const n = parseInt(m[0], 10);
+      var n = parseInt(m[0], 10);
       return Number.isFinite(n) && n >= 0 ? n : null;
-    }
-
-    async function fetchJson(url) {
-      const r = await fetch(url, { cache: 'no-cache' });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
     }
 
     async function loadChunk(start) {
       if (chunkCache.has(start)) return chunkCache.get(start);
-      const file = `bitmaps/${start}-${start + CHUNK - 1}.json`;
-      try { const d = await fetchJson(`./${file}`); chunkCache.set(start, d); return d; }
-      catch { const d = await fetchJson(`${RAW_GH}${file}`); chunkCache.set(start, d); return d; }
+      var file = 'bitmaps/' + start + '-' + (start + CHUNK - 1) + '.json';
+      try { var d = await fetchJson('./' + file); chunkCache.set(start, d); return d; }
+      catch(e) { var d2 = await fetchJson(RAW_GH + file); chunkCache.set(start, d2); return d2; }
     }
 
     async function loadParcelChunk(start) {
       if (parcelChunkCache.has(start)) return parcelChunkCache.get(start);
-      const file = `parcels/${start}-${start + CHUNK - 1}.json`;
+      var file = 'parcels/' + start + '-' + (start + CHUNK - 1) + '.json';
       try {
-        let d;
-        try { d = await fetchJson(`./${file}`); }
-        catch { d = await fetchJson(`${RAW_GH}${file}`); }
+        var d;
+        try { d = await fetchJson('./' + file); }
+        catch(e) { d = await fetchJson(RAW_GH + file); }
         parcelChunkCache.set(start, d);
         return d;
-      } catch {
-        // No parcel chunk for this range — that's fine
-        const empty = {};
+      } catch(e) {
+        var empty = {};
         parcelChunkCache.set(start, empty);
         return empty;
       }
@@ -190,188 +312,168 @@
 
     async function getMod() {
       if (modPromise) return modPromise;
-      modPromise = (async () => {
-        const code = await fetch(`https://ordinals.com/content/${MONDRIAN_ID}`).then(r => r.text());
+      modPromise = (async function() {
+        var code = await fetch('https://ordinals.com/content/' + MONDRIAN_ID).then(function(r) { return r.text(); });
         return import(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })));
       })();
       return modPromise;
     }
 
     /* ── Render Mondrian (canvas) ────────────────────────── */
-    // Stores the last rendered layout so we can hit-test on hover and export.
-    let lastLayout = null;   // { slots, scale, ox, oy, pw, ph, canvas, blockNum }
+    var lastLayout = null;
 
     async function renderMondrian(blockNum, parcelSet) {
-      const c = $('visualizer');
+      var c = $('visualizer');
       c.innerHTML = '';
       $('vizPlaceholder').style.display = 'none';
 
-      const [block, mod] = await Promise.all([
-        fetch(`https://blockchain.info/rawblock/${blockNum}?cors=true`).then(r => r.json()),
+      var results = await Promise.all([
+        fetch('https://blockchain.info/rawblock/' + blockNum + '?cors=true').then(function(r) { return r.json(); }),
         getMod()
       ]);
+      var block = results[0], mod = results[1];
 
-      const sizes = block.tx.map(tx => mod.getSquareSize(tx.out.reduce((s, o) => s + o.value, 0)));
-      const mondrian = new mod.MondrianLayout(sizes);
+      var sizes = block.tx.map(function(tx) { return mod.getSquareSize(tx.out.reduce(function(s, o) { return s + o.value; }, 0)); });
+      var mondrian = new mod.MondrianLayout(sizes);
 
-      // Use parent (.bitmap) rect so we fill the panel exactly
-      const parent = c.parentElement;
-      const rect = parent.getBoundingClientRect();
-      const w = Math.max(100, rect.width);
-      const h = Math.max(100, rect.height);
-      const scale = Math.min(w / mondrian.width, h / mondrian.height);
+      var parent = c.parentElement;
+      var rect = parent.getBoundingClientRect();
+      var w = Math.max(100, rect.width);
+      var h = Math.max(100, rect.height);
+      var scale = Math.min(w / mondrian.width, h / mondrian.height);
 
-      // Centre the pattern
-      const pw = mondrian.width * scale;
-      const ph = mondrian.height * scale;
-      const ox = Math.max(0, (w - pw) / 2);
-      const oy = Math.max(0, (h - ph) / 2);
+      var pw = mondrian.width * scale;
+      var ph = mondrian.height * scale;
+      var ox = Math.max(0, (w - pw) / 2);
+      var oy = Math.max(0, (h - ph) / 2);
 
-      // ---- Draw to canvas ----
-      const dpr = window.devicePixelRatio || 1;
-      const canvas = document.createElement('canvas');
+      var dpr = window.devicePixelRatio || 1;
+      var canvas = document.createElement('canvas');
       canvas.id = 'vizCanvas';
       canvas.width  = Math.round(pw * dpr);
       canvas.height = Math.round(ph * dpr);
-      canvas.style.width  = `${pw}px`;
-      canvas.style.height = `${ph}px`;
-      canvas.style.left   = `${ox}px`;
-      canvas.style.top    = `${oy}px`;
+      canvas.style.width  = pw + 'px';
+      canvas.style.height = ph + 'px';
+      canvas.style.left   = ox + 'px';
+      canvas.style.top    = oy + 'px';
 
-      const ctx = canvas.getContext('2d');
+      var ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
-
-      // Black background
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, pw, ph);
 
-      // Draw each slot — cyan for parcels, orange otherwise
-      const gap = 0.5;
-      mondrian.slots.forEach((slot, i) => {
-        const sx = slot.position.x * scale;
-        const sy = slot.position.y * scale;
-        const ss = (slot.size - gap) * scale;
+      var gap = 0.5;
+      mondrian.slots.forEach(function(slot, i) {
+        var sx = slot.position.x * scale;
+        var sy = slot.position.y * scale;
+        var ss = (slot.size - gap) * scale;
         ctx.fillStyle = (parcelSet && parcelSet.has(i)) ? '#00e5ff' : 'orange';
         ctx.fillRect(sx, sy, ss, ss);
       });
 
       c.appendChild(canvas);
-
-      lastLayout = { slots: mondrian.slots, scale, ox, oy, pw, ph, canvas, blockNum, parcelSet };
+      lastLayout = { slots: mondrian.slots, scale: scale, ox: ox, oy: oy, pw: pw, ph: ph, canvas: canvas, blockNum: blockNum, parcelSet: parcelSet };
     }
 
     /* ── Canvas hover tooltip ─────────────────────────────── */
-    const tooltip = $('vizTooltip');
-    $('panelBitmap').addEventListener('mousemove', e => {
+    var tooltip = $('vizTooltip');
+    $('panelBitmap').addEventListener('mousemove', function(e) {
       if (!lastLayout) return;
-      const { slots, scale, canvas, parcelSet } = lastLayout;
-      const cr = canvas.getBoundingClientRect();
-      const mx = e.clientX - cr.left;
-      const my = e.clientY - cr.top;
-      const gap = 0.5;
-      for (let i = 0; i < slots.length; i++) {
-        const s = slots[i];
-        const sx = s.position.x * scale;
-        const sy = s.position.y * scale;
-        const ss = (s.size - gap) * scale;
+      var slots = lastLayout.slots, scale = lastLayout.scale, canvas = lastLayout.canvas, parcelSet = lastLayout.parcelSet;
+      var cr = canvas.getBoundingClientRect();
+      var mx = e.clientX - cr.left;
+      var my = e.clientY - cr.top;
+      var gap = 0.5;
+      for (var i = 0; i < slots.length; i++) {
+        var s = slots[i];
+        var sx = s.position.x * scale;
+        var sy = s.position.y * scale;
+        var ss = (s.size - gap) * scale;
         if (mx >= sx && mx <= sx + ss && my >= sy && my <= sy + ss) {
-          const isParcel = parcelSet && parcelSet.has(i);
-          tooltip.textContent = isParcel ? `${i}.${lastLayout.blockNum}.bitmap (parcel)` : `tx #${i}`;
+          var isParcel = parcelSet && parcelSet.has(i);
+          tooltip.textContent = isParcel ? i + '.' + lastLayout.blockNum + '.bitmap (parcel)' : 'tx #' + i;
           tooltip.style.display = 'block';
-          tooltip.style.left = `${e.clientX + 12}px`;
-          tooltip.style.top  = `${e.clientY - 8}px`;
+          tooltip.style.left = (e.clientX + 12) + 'px';
+          tooltip.style.top  = (e.clientY - 8) + 'px';
           return;
         }
       }
       tooltip.style.display = 'none';
     });
-    $('panelBitmap').addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+    $('panelBitmap').addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });
 
-    /* ── Export canvas as PNG ─────────────────────────────── */
     function saveBitmapPNG() {
       if (!lastLayout) return;
-      const { canvas, blockNum } = lastLayout;
-      const link = document.createElement('a');
-      link.download = `bitmap-${blockNum}.png`;
+      var canvas = lastLayout.canvas, blockNum = lastLayout.blockNum;
+      var link = document.createElement('a');
+      link.download = 'bitmap-' + blockNum + '.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
     }
 
-    /* ── Main load ───────────────────────────────────────── */
+    /* ── Main bitmap load ────────────────────────────────── */
     async function load() {
       clearAll();
-      const btn = $('loadBtn');
-      const num = parseNum($('bitmapNumber').value);
+      var btn = $('loadBtn');
+      var num = parseNum($('bitmapNumber').value);
       if (num === null) {
         $('result').innerHTML = '<div class="kv"><div class="label">Error</div><div class="value">Enter a valid block number.</div></div>';
         return;
       }
-
       btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Loading';
-
       try {
         setStatus('Fetching bitmap index…');
-        const start = Math.floor(num / CHUNK) * CHUNK;
-        const [chunk, parcelChunk] = await Promise.all([
-          loadChunk(start),
-          loadParcelChunk(start)
-        ]);
-        const id = chunk[num - start] || null;
-        const inscUrl = id ? `https://ordinals.com/inscription/${id}` : null;
-        const beyondIndex = !id && lastKnownMaxBitmap !== null && num > lastKnownMaxBitmap;
+        var start = Math.floor(num / CHUNK) * CHUNK;
+        var results = await Promise.all([loadChunk(start), loadParcelChunk(start)]);
+        var chunk = results[0], parcelChunk = results[1];
+        var id = chunk[num - start] || null;
+        var inscUrl = id ? 'https://ordinals.com/inscription/' + id : null;
+        var beyondIndex = !id && lastKnownMaxBitmap !== null && num > lastKnownMaxBitmap;
 
-        // Parcel data for this bitmap: array of [parcelNumber, inscriptionId]
-        // Only show parcels when the bitmap is actually inscribed (uninscribed bitmaps can't have children)
-        const parcels = id ? (parcelChunk[num] || []) : [];
-        const parcelSet = new Set(parcels.map(p => p[0])); // tx indices that are parcels
+        var parcels = id ? (parcelChunk[num] || []) : [];
+        var parcelSet = new Set(parcels.map(function(p) { return p[0]; }));
 
-        let inscriptionHtml;
-        if (id) {
-          inscriptionHtml = `<a href="${inscUrl}" target="_blank">${id}</a>`;
-        } else if (beyondIndex) {
-          inscriptionHtml = `<span style="color:var(--dim)">⏳ Indexing in progress — block ${num.toLocaleString()} has not been scanned yet (indexed to ${lastKnownMaxBitmap.toLocaleString()})</span>`;
-        } else {
-          inscriptionHtml = `<span style="color:var(--dim)">null — not yet inscribed</span>`;
-        }
+        var inscriptionHtml;
+        if (id) inscriptionHtml = '<a href="' + inscUrl + '" target="_blank">' + id + '</a>';
+        else if (beyondIndex) inscriptionHtml = '<span style="color:var(--dim)">Indexing in progress — block ' + num.toLocaleString() + ' not yet scanned (indexed to ' + lastKnownMaxBitmap.toLocaleString() + ')</span>';
+        else inscriptionHtml = '<span style="color:var(--dim)">null — not yet inscribed</span>';
 
-        // Build parcels section for info panel
-        let parcelsHtml = '';
+        var parcelsHtml = '';
         if (parcels.length > 0) {
-          const sorted = [...parcels].sort((a, b) => a[0] - b[0]);
-          const MAX_SHOW = 20;
-          const parcelRows = sorted.slice(0, MAX_SHOW).map(([pn, pid]) => {
-            const pUrl = `https://ordinals.com/inscription/${pid}`;
-            const label = `${pn}.${num}.bitmap`;
-            return `<div style="font-size:11px;margin:2px 0"><span style="color:var(--cyan);font-weight:600">${label}</span> <a href="${pUrl}" target="_blank" class="mono" style="font-size:10px">${pid.slice(0, 12)}…</a></div>`;
+          var sorted = parcels.slice().sort(function(a, b) { return a[0] - b[0]; });
+          var MS = 20;
+          var rows = sorted.slice(0, MS).map(function(p) {
+            var pUrl = 'https://ordinals.com/inscription/' + p[1];
+            var lbl = p[0] + '.' + num + '.bitmap';
+            return '<div style="font-size:11px;margin:2px 0"><span style="color:var(--cyan);font-weight:600">' + lbl + '</span> <a href="' + pUrl + '" target="_blank" class="mono" style="font-size:10px">' + p[1].slice(0, 12) + '…</a></div>';
           }).join('');
-          const moreText = sorted.length > MAX_SHOW ? `<div style="font-size:11px;color:var(--dim)">…and ${sorted.length - MAX_SHOW} more</div>` : '';
-          parcelsHtml = `<div class="kv"><div class="label" style="color:var(--cyan)">Parcels (${sorted.length})</div><div class="value">${parcelRows}${moreText}</div></div>`;
+          var moreText = sorted.length > MS ? '<div style="font-size:11px;color:var(--dim)">…and ' + (sorted.length - MS) + ' more</div>' : '';
+          parcelsHtml = '<div class="kv"><div class="label" style="color:var(--cyan)">Parcels (' + sorted.length + ')</div><div class="value">' + rows + moreText + '</div></div>';
         }
 
-        $('result').innerHTML = [
-          `<div class="kv"><div class="label">Bitmap</div><div class="value mono">${num}</div></div>`,
-          `<div class="kv"><div class="label">Inscription</div><div class="value mono">${inscriptionHtml}</div></div>`,
-          parcelsHtml,
-          `<div class="actions">${id ? `<button class="pill" id="copyBtn">Copy id</button><a class="pill" href="${inscUrl}" target="_blank">ordinals.com</a>` : ''}<button class="pill" id="savePngBtn">Save PNG</button></div>`
-        ].join('');
+        $('result').innerHTML =
+          '<div class="kv"><div class="label">Bitmap</div><div class="value mono">' + num + '</div></div>' +
+          '<div class="kv"><div class="label">Inscription</div><div class="value mono">' + inscriptionHtml + '</div></div>' +
+          parcelsHtml +
+          '<div class="actions">' + (id ? '<button class="pill" id="copyBtn">Copy id</button><a class="pill" href="' + inscUrl + '" target="_blank">ordinals.com</a>' : '') + '<button class="pill" id="savePngBtn">Save PNG</button></div>';
 
         if (id) {
-          $('copyBtn')?.addEventListener('click', async () => {
+          var cb = $('copyBtn');
+          if (cb) cb.addEventListener('click', async function() {
             try { await navigator.clipboard.writeText(id); setStatus('Copied!'); }
-            catch { setStatus('Copy blocked by browser.'); }
+            catch(e2) { setStatus('Copy blocked by browser.'); }
           }, { once: true });
         }
 
         setStatus('Rendering bitmap pattern…');
         await renderMondrian(num, parcelSet.size > 0 ? parcelSet : null);
-
-        $('savePngBtn')?.addEventListener('click', () => saveBitmapPNG(), { once: true });
-
+        var sp = $('savePngBtn');
+        if (sp) sp.addEventListener('click', function() { saveBitmapPNG(); }, { once: true });
         setStatus('');
-        if (isMobile()) switchTab('bitmap');
+        if (isMobile()) switchBmTab('bitmap');
       } catch (err) {
         console.error(err);
-        $('result').innerHTML = `<div class="kv"><div class="label">Error</div><div class="value">${err?.message || err}</div></div>`;
+        $('result').innerHTML = '<div class="kv"><div class="label">Error</div><div class="value">' + (err && err.message || err) + '</div></div>';
         setStatus('');
       } finally {
         btn.disabled = false; btn.classList.remove('loading'); btn.textContent = 'Load';
@@ -379,105 +481,314 @@
     }
 
     $('loadBtn').addEventListener('click', load);
-    $('bitmapNumber').addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
+    $('bitmapNumber').addEventListener('keydown', function(e) { if (e.key === 'Enter') load(); });
 
-    /* ── Download range as gallery JSON (inscription-ready) ── */
+    /* ── Download range as gallery JSON ──────────────────── */
     async function downloadRange() {
-      const from = parseNum($('dlFrom').value);
-      const to   = parseNum($('dlTo').value);
-      const dlSt = $('dlStatus');
+      var from = parseNum($('dlFrom').value);
+      var to   = parseNum($('dlTo').value);
+      var dlSt = $('dlStatus');
       dlSt.textContent = '';
 
       if (from === null || to === null) { dlSt.textContent = 'Enter valid start and end numbers.'; return; }
       if (from > to) { dlSt.textContent = '"From" must be ≤ "To".'; return; }
-      const MAX_RANGE = 1000000;
-      if (to - from + 1 > MAX_RANGE) { dlSt.textContent = `Range too large (max ${MAX_RANGE.toLocaleString()}).`; return; }
+      var MAX_RANGE = 1000000;
+      if (to - from + 1 > MAX_RANGE) { dlSt.textContent = 'Range too large (max ' + MAX_RANGE.toLocaleString() + ').'; return; }
 
-      const btn = $('dlBtn');
+      var btn = $('dlBtn');
       btn.disabled = true; btn.textContent = 'Downloading…';
-
       try {
-        const startChunk = Math.floor(from / CHUNK) * CHUNK;
-        const endChunk   = Math.floor(to   / CHUNK) * CHUNK;
-        const needed = [];
-        for (let s = startChunk; s <= endChunk; s += CHUNK) needed.push(s);
+        var startChunk = Math.floor(from / CHUNK) * CHUNK;
+        var endChunk   = Math.floor(to   / CHUNK) * CHUNK;
+        var needed = [];
+        for (var s = startChunk; s <= endChunk; s += CHUNK) needed.push(s);
 
-        dlSt.textContent = `Loading ${needed.length} chunk(s)…`;
-        const chunks = await Promise.all(needed.map(s => loadChunk(s)));
+        dlSt.textContent = 'Loading ' + needed.length + ' chunk(s)…';
+        var chunks = await Promise.all(needed.map(function(s2) { return loadChunk(s2); }));
 
-        // Build gallery items — only inscribed bitmaps
-        const items = [];
-        for (let n = from; n <= to; n++) {
-          const cs = Math.floor(n / CHUNK) * CHUNK;
-          const ci = needed.indexOf(cs);
-          const id = chunks[ci][n - cs] || null;
-          if (id) {
-            items.push({
-              inscriptionId: id,
-              attributes: { title: `${n}.bitmap` }
-            });
-          }
+        var items = [];
+        for (var n = from; n <= to; n++) {
+          var cs = Math.floor(n / CHUNK) * CHUNK;
+          var ci = needed.indexOf(cs);
+          var cid = chunks[ci][n - cs] || null;
+          if (cid) items.push({ inscriptionId: cid, attributes: { title: n + '.bitmap' } });
         }
 
-        // Gallery-style properties JSON (mirrors ordinals CDDL schema)
-        // attributes (key 1) → title is the bitmap range
-        // items (key 0)      → each inscribed bitmap with its own title
-        const gallery = {
-          attributes: {
-            title: `Bitmaps ${from.toLocaleString()}-${to.toLocaleString()}`
-          },
-          range: { from, to },
+        var gallery = {
+          attributes: { title: 'Bitmaps ' + from.toLocaleString() + '-' + to.toLocaleString() },
+          range: { from: from, to: to },
           count: items.length,
-          items
+          items: items
         };
 
-        const blob = new Blob([JSON.stringify(gallery, null, 2)], { type: 'application/json' });
-        const link = document.createElement('a');
-        link.download = `bitmaps-gallery-${from}-${to}.json`;
+        var blob = new Blob([JSON.stringify(gallery, null, 2)], { type: 'application/json' });
+        var link = document.createElement('a');
+        link.download = 'bitmaps-gallery-' + from + '-' + to + '.json';
         link.href = URL.createObjectURL(blob);
         link.click();
         URL.revokeObjectURL(link.href);
-
-        dlSt.textContent = `Downloaded gallery: ${items.length.toLocaleString()} inscribed of ${(to - from + 1).toLocaleString()} in range.`;
+        dlSt.textContent = 'Downloaded gallery: ' + items.length.toLocaleString() + ' inscribed of ' + (to - from + 1).toLocaleString() + ' in range.';
       } catch (err) {
         console.error(err);
-        dlSt.textContent = `Error: ${err?.message || err}`;
+        dlSt.textContent = 'Error: ' + (err && err.message || err);
       } finally {
         btn.disabled = false; btn.textContent = 'Download JSON';
       }
     }
-
     $('dlBtn').addEventListener('click', downloadRange);
 
     /* ── Meta / height indicators (auto-refresh every 30s) ── */
-    let lastKnownTip = null;
-    let lastKnownMaxBitmap = null;
+    var lastKnownTip = null;
+    var lastKnownMaxBitmap = null;
 
     async function loadMeta() {
       try {
-        let meta;
+        var meta;
         try { meta = await fetchJson('./bitmaps/meta.json'); }
-        catch { meta = await fetchJson(`${RAW_GH}bitmaps/meta.json`); }
-        const p = [];
-        if (meta.ordTip != null) p.push(`<span>Block height: <b>${Number(meta.ordTip).toLocaleString()}</b></span>`);
-        if (meta.maxBitmap != null) p.push(`<span>Indexed to: <b>${Number(meta.maxBitmap).toLocaleString()}</b></span>`);
-        if (meta.updatedAt) p.push(`<span>Updated: <b>${new Date(meta.updatedAt).toLocaleString()}</b></span>`);
+        catch(e) { meta = await fetchJson(RAW_GH + 'bitmaps/meta.json'); }
+        var p = [];
+        if (meta.ordTip != null) p.push('<span>Block height: <b>' + fmt(meta.ordTip) + '</b></span>');
+        if (meta.maxBitmap != null) p.push('<span>Indexed to: <b>' + fmt(meta.maxBitmap) + '</b></span>');
+        if (meta.updatedAt) p.push('<span>Updated: <b>' + new Date(meta.updatedAt).toLocaleString() + '</b></span>');
         $('heights').innerHTML = p.join('<span class="sep">|</span>');
 
-        // If tip changed, invalidate cached chunk so next lookup is fresh
         if (lastKnownTip !== null && meta.ordTip !== lastKnownTip) {
           chunkCache.clear();
           parcelChunkCache.clear();
+          deploysCache = null;
+          deploysLoaded = false;
         }
         lastKnownTip = meta.ordTip;
-        lastKnownMaxBitmap = meta.maxBitmap ?? null;
-      } catch {}
+        lastKnownMaxBitmap = meta.maxBitmap != null ? meta.maxBitmap : null;
+      } catch (e) {}
     }
     loadMeta();
-    setInterval(loadMeta, 30000); // poll every 30 seconds
+    setInterval(loadMeta, 30000);
 
-    if (!isMobile()) contentPanels.forEach(p => p.classList.remove('hidden'));
-    setTimeout(() => { try { $('bitmapNumber').focus(); } catch {} }, 50);
+    if (!isMobile()) bmPanels.forEach(function(p) { p.classList.remove('hidden'); });
+    setTimeout(function() { try { $('bitmapNumber').focus(); } catch(e) {} }, 50);
+
+    /* ══════════════════════════════════════════════════════ */
+    /* ── BRC-420 PAGE LOGIC ──────────────────────────── */
+    /* ══════════════════════════════════════════════════════ */
+    var deploysCache = null;
+    var currentFilter = 'all'; // 'all' | 'minted-out' | 'active'
+
+    /* ── Filter tabs ─────────────────────────────────────── */
+    var filterBtns = document.querySelectorAll('.filter-tab');
+    filterBtns.forEach(function(b) {
+      b.addEventListener('click', function() {
+        currentFilter = b.dataset.filter;
+        filterBtns.forEach(function(x) { x.classList.toggle('active', x.dataset.filter === currentFilter); });
+        applyFilter();
+      });
+    });
+
+    function isMintedOut(d) { return d.mints >= d.max && d.max > 0; }
+
+    function applyFilter() {
+      if (!deploysCache) return;
+      var q = $('brcSearch').value.trim().toLowerCase();
+      var list = deploysCache;
+
+      // text search
+      if (q) {
+        list = list.filter(function(d) {
+          return d.name.toLowerCase().indexOf(q) >= 0 ||
+            d.id.toLowerCase().indexOf(q) >= 0 ||
+            (d.source_id && d.source_id.toLowerCase().indexOf(q) >= 0);
+        });
+      }
+      // folder filter
+      if (currentFilter === 'minted-out') list = list.filter(function(d) { return isMintedOut(d); });
+      else if (currentFilter === 'active') list = list.filter(function(d) { return !isMintedOut(d); });
+
+      $('deployGrid').classList.remove('hidden');
+      $('deployDetail').classList.remove('active');
+      renderDeployGrid(list);
+    }
+
+    async function loadDeploys() {
+      try {
+        if (!deploysCache) {
+          var data;
+          try { data = await fetchJson('./brc420/deploys.json'); }
+          catch(e) { data = await fetchJson(RAW_GH + 'brc420/deploys.json'); }
+          deploysCache = data;
+        }
+        deploysLoaded = true;
+
+        var totalDeploys = deploysCache.length;
+        var totalMints = deploysCache.reduce(function(s, d) { return s + (d.mints || 0); }, 0);
+        var mc = deploysCache.filter(function(d) { return isMintedOut(d); }).length;
+        var ac = totalDeploys - mc;
+
+        $('brcStats').innerHTML =
+          '<div class="brc-stat">Deploys: <b>' + fmt(totalDeploys) + '</b></div>' +
+          '<div class="brc-stat">Total Mints: <b>' + fmt(totalMints) + '</b></div>' +
+          '<div class="brc-stat">Minted Out: <b>' + fmt(mc) + '</b></div>' +
+          '<div class="brc-stat">Active: <b>' + fmt(ac) + '</b></div>';
+
+        $('countAll').textContent = '(' + totalDeploys + ')';
+        $('countMinted').textContent = '(' + mc + ')';
+        $('countActive').textContent = '(' + ac + ')';
+
+        applyFilter();
+      } catch (err) {
+        console.error(err);
+        $('deployGrid').innerHTML = '<div class="empty" style="grid-column:1/-1">Failed to load deploys: ' + (err && err.message || err) + '</div>';
+      }
+    }
+
+    function renderDeployGrid(deploys) {
+      var grid = $('deployGrid');
+      if (deploys.length === 0) {
+        grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No deploys match your search.</div>';
+        return;
+      }
+
+      grid.innerHTML = deploys.map(function(d) {
+        var pct = d.max > 0 ? Math.min(100, Math.round((d.mints / d.max) * 100)) : 0;
+        var previewUrl = d.source_id ? 'https://ordinals.com/preview/' + d.source_id : '';
+        var mo = isMintedOut(d);
+        var badgeClass = mo ? 'deploy-card__badge--minted' : 'deploy-card__badge--active';
+        var badgeText = mo ? 'MINTED OUT' : 'ACTIVE';
+        return '<div class="deploy-card" onclick="showDeploy(\'' + d.id.replace(/'/g, "\\'") + '\')">' +
+          '<div class="deploy-card__preview">' +
+            (previewUrl ? '<iframe src="' + previewUrl + '" loading="lazy" sandbox="allow-scripts allow-same-origin" title="' + escHtml(d.name) + '"></iframe>' : '<div class="empty">No preview</div>') +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<div class="deploy-card__name">' + escHtml(d.name) + '</div>' +
+            '<div class="deploy-card__badge ' + badgeClass + '">' + badgeText + '</div>' +
+          '</div>' +
+          '<div class="deploy-card__row"><span>Minted</span><b>' + fmt(d.mints) + ' / ' + fmt(d.max) + '</b></div>' +
+          '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="deploy-card__row"><span>Price</span><b>' + (d.price ? fmt(d.price) + ' sats' : '—') + '</b></div>' +
+          '<div class="deploy-card__row"><span>Block</span><b>' + fmt(d.block_height) + '</b></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    /* ── Search ──────────────────────────────────────────── */
+    var brcSearchTimer = null;
+    $('brcSearch').addEventListener('input', function() {
+      clearTimeout(brcSearchTimer);
+      brcSearchTimer = setTimeout(function() { applyFilter(); }, 200);
+    });
+
+    /* ── Deploy detail view ──────────────────────────────── */
+    var currentDeployGallery = null;
+    var currentDeployEntry = null;
+    var mintPage = 0;
+    var MINTS_PER_PAGE = 50;
+
+    async function showDeploy(deployId) {
+      var grid = $('deployGrid');
+      var detail = $('deployDetail');
+      grid.classList.add('hidden');
+      detail.classList.add('active');
+
+      var d = deploysCache ? deploysCache.find(function(x) { return x.id === deployId; }) : null;
+      if (!d) { detail.innerHTML = '<div class="empty">Deploy not found.</div>'; return; }
+
+      currentDeployEntry = d;
+      var pct = d.max > 0 ? Math.min(100, Math.round((d.mints / d.max) * 100)) : 0;
+      var previewUrl = d.source_id ? 'https://ordinals.com/preview/' + d.source_id : '';
+      var mo = isMintedOut(d);
+
+      currentDeployGallery = null;
+      mintPage = 0;
+
+      // Load gallery using the file field from deploys.json
+      var galleryFile = d.file;
+      if (galleryFile) {
+        try {
+          var gallery;
+          try { gallery = await fetchJson('./brc420/' + galleryFile); }
+          catch(e) { gallery = await fetchJson(RAW_GH + 'brc420/' + galleryFile); }
+          currentDeployGallery = gallery;
+        } catch (err) { console.warn('Failed to load gallery:', err); }
+      }
+
+      detail.innerHTML =
+        '<div class="dd-back" onclick="backToGrid()">← Back to deploys</div>' +
+        '<div class="dd-hero">' +
+          '<div class="dd-preview">' +
+            (previewUrl ? '<iframe src="' + previewUrl + '" sandbox="allow-scripts allow-same-origin" title="' + escHtml(d.name) + '"></iframe>' : '<div class="empty">No preview</div>') +
+          '</div>' +
+          '<div class="dd-meta">' +
+            '<div class="dd-title">' + escHtml(d.name) + ' <span class="deploy-card__badge ' + (mo ? 'deploy-card__badge--minted' : 'deploy-card__badge--active') + '" style="font-size:10px;vertical-align:middle">' + (mo ? 'MINTED OUT' : 'ACTIVE') + '</span></div>' +
+            '<div class="dd-id"><a href="https://ordinals.com/inscription/' + d.id + '" target="_blank">' + d.id + '</a></div>' +
+            '<div class="dd-stats">' +
+              '<div class="dd-stat"><div class="dd-stat__label">Total Mints</div><div class="dd-stat__value">' + fmt(d.mints) + '</div></div>' +
+              '<div class="dd-stat"><div class="dd-stat__label">Max Supply</div><div class="dd-stat__value">' + fmt(d.max) + '</div></div>' +
+              '<div class="dd-stat"><div class="dd-stat__label">Price</div><div class="dd-stat__value">' + (d.price ? fmt(d.price) + ' sats' : '—') + '</div></div>' +
+              '<div class="dd-stat"><div class="dd-stat__label">Block</div><div class="dd-stat__value">' + fmt(d.block_height) + '</div></div>' +
+              (d.deployer_address ? '<div class="dd-stat" style="grid-column:1/-1"><div class="dd-stat__label">Deployer</div><div class="dd-stat__value mono" style="font-size:11px">' + d.deployer_address + '</div></div>' : '') +
+            '</div>' +
+            '<div class="dd-progress">' +
+              '<div class="dd-progress__header"><span>Mint Progress</span><span>' + pct + '%</span></div>' +
+              '<div class="dd-progress__track"><div class="dd-progress__fill" style="width:' + pct + '%"></div></div>' +
+              '<div class="dd-progress__labels"><span>' + fmt(d.mints) + ' minted</span><span>' + fmt(Math.max(0, d.max - d.mints)) + ' remaining</span></div>' +
+            '</div>' +
+            '<div class="dd-actions">' +
+              '<button class="btn-dl" onclick="downloadDeployGallery()">Download ' + escHtml(d.name) + ' Gallery JSON</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mints-section">' +
+          '<div class="mints-heading">Mint History (' + (currentDeployGallery ? fmt(currentDeployGallery.count) : '0') + ')</div>' +
+          '<table class="mints-table">' +
+            '<thead><tr><th>#</th><th>Inscription ID</th><th>Wallet</th><th>Block</th></tr></thead>' +
+            '<tbody id="mintsBody"></tbody>' +
+          '</table>' +
+          '<button class="btn-more" id="loadMoreMints" onclick="loadMoreMints()" style="display:none">Load More</button>' +
+        '</div>';
+
+      loadMoreMints();
+    }
+
+    function loadMoreMints() {
+      if (!currentDeployGallery) return;
+      var items = currentDeployGallery.items;
+      var start = mintPage * MINTS_PER_PAGE;
+      var end = Math.min(start + MINTS_PER_PAGE, items.length);
+      var tbody = $('mintsBody');
+      if (!tbody) return;
+
+      for (var i = start; i < end; i++) {
+        var m = items[i];
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + (i + 1) + '</td>' +
+          '<td class="td-id"><a href="https://ordinals.com/inscription/' + m.inscriptionId + '" target="_blank" title="' + m.inscriptionId + '">' + trunc(m.inscriptionId, 14, 8) + '</a></td>' +
+          '<td class="td-addr" title="' + (m.attributes && m.attributes.wallet || '') + '">' + trunc(m.attributes && m.attributes.wallet || '—', 14, 6) + '</td>' +
+          '<td>' + fmt(m.attributes && m.attributes.block_height) + '</td>';
+        tbody.appendChild(tr);
+      }
+
+      mintPage++;
+      var btn = $('loadMoreMints');
+      if (btn) btn.style.display = end < items.length ? 'block' : 'none';
+    }
+
+    function downloadDeployGallery() {
+      if (!currentDeployGallery || !currentDeployEntry) return;
+      var name = currentDeployEntry.name || 'deploy';
+      var blob = new Blob([JSON.stringify(currentDeployGallery, null, 2)], { type: 'application/json' });
+      var link = document.createElement('a');
+      link.download = name.replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, '-').toLowerCase() + '-gallery.json';
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function backToGrid() {
+      $('deployGrid').classList.remove('hidden');
+      $('deployDetail').classList.remove('active');
+      currentDeployGallery = null;
+      currentDeployEntry = null;
+    }
   </script>
 </body>
 </html>
