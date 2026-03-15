@@ -691,29 +691,33 @@
     <!-- ── BRC-420 PAGE ─────────────────────────────── -->
     <!-- ══════════════════════════════════════════════════ -->
     <div class="page" id="pageBrc420">
-      <div class="warning-banner">
-        <span class="warning-banner__icon">⚠️</span>
-        <span><b>Verification in progress</b> — Collection details and mint counts are still being verified. Some mints may not yet appear while payment and content-type validation is being refined. Data shown here may be incomplete.</span>
-      </div>
-      <div class="brc-stats" id="brcStats"></div>
-      <div class="brc-filter-row">
-        <div class="filter-tabs" id="filterTabs">
-          <button class="filter-tab active" data-filter="all">All <span class="badge" id="countAll"></span></button>
-          <button class="filter-tab" data-filter="minted-out">Minted Out <span class="badge" id="countMinted"></span></button>
-          <button class="filter-tab" data-filter="active">Active <span class="badge" id="countActive"></span></button>
+      <div class="page-hero">
+        <div class="warning-banner">
+          <span class="warning-banner__icon">⚠️</span>
+          <span><b>Verification in progress</b> — Collection details and mint counts are still being verified. Some mints may not yet appear while payment and content-type validation is being refined. Data shown here may be incomplete.</span>
         </div>
-        <div class="search" style="flex:1;min-width:180px;">
-          <input type="text" id="brcSearch" placeholder="Search deploy name or inscription ID…" style="font-size:13px;padding:6px 10px;" />
+        <div class="brc-stats" id="brcStats"></div>
+        <div class="brc-filter-row">
+          <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab active" data-filter="all">All <span class="badge" id="countAll"></span></button>
+            <button class="filter-tab" data-filter="minted-out">Minted Out <span class="badge" id="countMinted"></span></button>
+            <button class="filter-tab" data-filter="active">Active <span class="badge" id="countActive"></span></button>
+          </div>
+          <div class="search" style="flex:1;min-width:180px;">
+            <input type="text" id="brcSearch" placeholder="Search deploy name or inscription ID…" style="font-size:13px;padding:6px 10px;" />
+          </div>
         </div>
       </div>
 
-      <!-- Deploy grid (listing) -->
-      <div class="deploy-grid" id="deployGrid">
-        <div class="empty" style="grid-column:1/-1">Loading deploys…</div>
-      </div>
+      <div class="page-body" style="padding: 0 1.5rem 12px;">
+        <!-- Deploy grid (listing) -->
+        <div class="deploy-grid" id="deployGrid">
+          <div class="empty" style="grid-column:1/-1">Loading deploys…</div>
+        </div>
 
-      <!-- Deploy detail (single view) -->
-      <div class="deploy-detail" id="deployDetail"></div>
+        <!-- Deploy detail (single view) -->
+        <div class="deploy-detail" id="deployDetail"></div>
+      </div>
     </div>
   </div>
 
