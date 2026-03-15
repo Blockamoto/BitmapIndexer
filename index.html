@@ -276,7 +276,7 @@
         const ss = (s.size - gap) * scale;
         if (mx >= sx && mx <= sx + ss && my >= sy && my <= sy + ss) {
           const isParcel = parcelSet && parcelSet.has(i);
-          tooltip.textContent = isParcel ? `tx #${i} • parcel` : `tx #${i}`;
+          tooltip.textContent = isParcel ? `${i}.${lastLayout.blockNum}.bitmap (parcel)` : `tx #${i}`;
           tooltip.style.display = 'block';
           tooltip.style.left = `${e.clientX + 12}px`;
           tooltip.style.top  = `${e.clientY - 8}px`;
@@ -336,13 +336,15 @@
         // Build parcels section for info panel
         let parcelsHtml = '';
         if (parcels.length > 0) {
+          const sorted = [...parcels].sort((a, b) => a[0] - b[0]);
           const MAX_SHOW = 20;
-          const parcelRows = parcels.slice(0, MAX_SHOW).map(([pn, pid]) => {
+          const parcelRows = sorted.slice(0, MAX_SHOW).map(([pn, pid]) => {
             const pUrl = `https://ordinals.com/inscription/${pid}`;
-            return `<div style="font-size:11px;margin:2px 0"><span style="color:var(--cyan);font-weight:600">#${pn}</span> <a href="${pUrl}" target="_blank" class="mono" style="font-size:10px">${pid.slice(0, 12)}…</a></div>`;
+            const label = `${pn}.${num}.bitmap`;
+            return `<div style="font-size:11px;margin:2px 0"><span style="color:var(--cyan);font-weight:600">${label}</span> <a href="${pUrl}" target="_blank" class="mono" style="font-size:10px">${pid.slice(0, 12)}…</a></div>`;
           }).join('');
-          const moreText = parcels.length > MAX_SHOW ? `<div style="font-size:11px;color:var(--dim)">…and ${parcels.length - MAX_SHOW} more</div>` : '';
-          parcelsHtml = `<div class="kv"><div class="label" style="color:var(--cyan)">Parcels (${parcels.length})</div><div class="value">${parcelRows}${moreText}</div></div>`;
+          const moreText = sorted.length > MAX_SHOW ? `<div style="font-size:11px;color:var(--dim)">…and ${sorted.length - MAX_SHOW} more</div>` : '';
+          parcelsHtml = `<div class="kv"><div class="label" style="color:var(--cyan)">Parcels (${sorted.length})</div><div class="value">${parcelRows}${moreText}</div></div>`;
         }
 
         $('result').innerHTML = [
