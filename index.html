@@ -1175,6 +1175,31 @@
     }
     navTabs.forEach(function(b) { b.addEventListener('click', function() { switchPage(b.dataset.page); }); });
 
+    /* ── Hamburger menu toggle ──────────────────────────── */
+    (function() {
+      var burger = document.getElementById('hamburger');
+      var menu = document.getElementById('navTabs');
+      var overlay = document.getElementById('navOverlay');
+      function closeMenu() {
+        burger.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+        menu.classList.remove('open');
+        overlay.classList.remove('show');
+      }
+      function toggleMenu() {
+        var isOpen = menu.classList.toggle('open');
+        burger.classList.toggle('open', isOpen);
+        burger.setAttribute('aria-expanded', String(isOpen));
+        overlay.classList.toggle('show', isOpen);
+      }
+      burger.addEventListener('click', toggleMenu);
+      overlay.addEventListener('click', closeMenu);
+      // Close menu when a tab is clicked (mobile)
+      navTabs.forEach(function(b) { b.addEventListener('click', closeMenu); });
+      // Close on escape key
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeMenu(); });
+    })();
+
     /* ══════════════════════════════════════════════════════ */
     /* ── BITMAP PAGE ──────────────────────────────────── */
     /* ══════════════════════════════════════════════════════ */
