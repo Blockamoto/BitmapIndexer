@@ -44,6 +44,19 @@
       --btm-text:      #ffe8cc;
       --btm-dim:       #6a3a1a;
       --btm-gradient:  linear-gradient(135deg, #ff6a00 0%, #ffaa00 100%);
+      /* OrdHub Green/Emerald */
+      --oh-bg-deep:    #010c06;
+      --oh-bg:         #020e08;
+      --oh-card:       #051a0d;
+      --oh-border:     #0a3018;
+      --oh-accent:     #00e676;
+      --oh-accent2:    #69f0ae;
+      --oh-glow-lg:    0 0 40px rgba(0,230,118,0.25), 0 0 80px rgba(0,230,118,0.1);
+      --oh-glow-md:    0 0 20px rgba(0,230,118,0.2);
+      --oh-glow-sm:    0 0 10px rgba(0,230,118,0.15);
+      --oh-text:       #c8ffd8;
+      --oh-dim:        #2a6840;
+      --oh-gradient:   linear-gradient(135deg, #00e676 0%, #69f0ae 100%);
       /* Shared */
       --font-display:  'Orbitron', 'JetBrains Mono', monospace;
       --font-mono:     'JetBrains Mono', 'Courier New', monospace;
@@ -134,6 +147,13 @@
       border-color: rgba(0,212,255,0.25);
       background: rgba(0,212,255,0.06);
     }
+    .nav-tab[data-page="ordhub"] { color: var(--oh-dim); }
+    .nav-tab[data-page="ordhub"]:hover,
+    .nav-tab[data-page="ordhub"].active {
+      color: var(--oh-accent);
+      border-color: rgba(0,230,118,0.25);
+      background: rgba(0,230,118,0.06);
+    }
     .topnav__links {
       display: flex; gap: 6px; margin-left: auto; margin-right: 12px;
     }
@@ -206,6 +226,9 @@
     /* BRC-420 hero (cyan radial) */
     #pageBrc420 .page-hero    { background: linear-gradient(180deg, var(--brc-bg-deep) 0%, var(--brc-bg) 100%); border-color: var(--brc-border); }
     #pageBrc420 .page-hero::before { background: radial-gradient(ellipse, rgba(0,212,255,0.07) 0%, transparent 70%); }
+    /* OrdHub hero (green radial) */
+    #pageOrdhub .page-hero    { background: linear-gradient(180deg, var(--oh-bg-deep) 0%, var(--oh-bg) 100%); border-color: var(--oh-border); }
+    #pageOrdhub .page-hero::before { background: radial-gradient(ellipse, rgba(0,230,118,0.07) 0%, transparent 70%); }
 
     .page-body {
       flex: 1 1 0;
@@ -274,6 +297,18 @@
       background: rgba(0,212,255,0.1); color: var(--brc-accent); border-color: var(--brc-border);
     }
     #pageBrc420 .search button:hover { background: rgba(0,212,255,0.2); box-shadow: var(--brc-glow-sm); }
+
+    /* OrdHub-themed search */
+    #pageOrdhub .search input {
+      color: var(--oh-text); border-color: var(--oh-border);
+      background: rgba(0,230,118,0.03);
+    }
+    #pageOrdhub .search input::placeholder { color: var(--oh-dim); }
+    #pageOrdhub .search input:focus { border-color: rgba(0,230,118,0.5); background: rgba(0,230,118,0.05); }
+    #pageOrdhub .search button {
+      background: rgba(0,230,118,0.1); color: var(--oh-accent); border-color: var(--oh-border);
+    }
+    #pageOrdhub .search button:hover { background: rgba(0,230,118,0.2); box-shadow: var(--oh-glow-sm); }
 
     .status-line { font-family: var(--font-mono); font-size: 0.68rem; color: var(--btm-dim); min-height: 14px; margin-top: 6px; }
     .pill {
@@ -720,6 +755,123 @@
       .warning-banner__detail { display: none; }
       .warning-banner__toggle { display: inline; }
     }
+
+    /* ===========================================================
+       ORDHUB PAGE
+       =========================================================== */
+    .oh-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 0.6rem;
+      margin-bottom: 10px;
+    }
+    .oh-stat {
+      padding: 0.7rem 0.9rem;
+      border: 1px solid var(--oh-border);
+      border-radius: var(--radius);
+      background: var(--oh-card);
+      font-family: var(--font-mono); font-size: 0.68rem;
+      color: var(--oh-text);
+      position: relative; overflow: hidden;
+      cursor: pointer; transition: var(--ease);
+    }
+    .oh-stat::after {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--oh-gradient); opacity: 0.4;
+      transition: var(--ease);
+    }
+    .oh-stat:hover, .oh-stat.active {
+      border-color: rgba(0,230,118,0.4);
+      box-shadow: var(--oh-glow-sm);
+    }
+    .oh-stat.active::after { opacity: 1; }
+    .oh-stat b {
+      font-family: var(--font-display);
+      color: var(--oh-accent); font-weight: 700; font-size: 0.78rem;
+      display: block; margin-top: 2px;
+    }
+    .oh-stat .oh-lang { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; font-size: 0.6rem; color: var(--oh-dim); }
+
+    .oh-results-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0 6px;
+      font-family: var(--font-mono); font-size: 0.68rem; color: var(--oh-dim);
+      border-bottom: 1px solid var(--oh-border);
+      margin-bottom: 0;
+    }
+    .oh-results-header b { color: var(--oh-accent); }
+
+    .oh-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .oh-table th {
+      text-align: left; padding: 8px 10px;
+      font-family: var(--font-body); font-size: 0.58rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--oh-dim); border-bottom: 1px solid var(--oh-border);
+      background: rgba(0,230,118,0.02); position: sticky; top: 0; z-index: 1;
+    }
+    .oh-table td {
+      padding: 6px 10px; font-family: var(--font-mono); font-size: 0.72rem;
+      border-bottom: 1px solid rgba(10,48,24,0.5); color: var(--oh-text);
+    }
+    .oh-table tbody tr { background: var(--oh-card); transition: var(--ease); }
+    .oh-table tbody tr:hover { background: rgba(0,230,118,0.03); }
+    .oh-table .td-id {
+      max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .oh-table a { color: var(--oh-accent); text-decoration: none; transition: var(--ease); }
+    .oh-table a:hover { text-decoration: underline; filter: brightness(1.2); }
+    .oh-lang-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 0.55rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      border: 1px solid rgba(0,230,118,0.2); background: rgba(0,230,118,0.06); color: var(--oh-accent);
+    }
+    .oh-type-badge {
+      font-size: 0.58rem; color: var(--oh-dim); max-width: 160px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .oh-load-more {
+      display: flex; justify-content: center; padding: 1rem 0;
+    }
+    .oh-load-more button {
+      font-family: var(--font-mono); font-size: 0.76rem; font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 10px 32px; border-radius: 8px;
+      border: 1px solid rgba(0,230,118,0.25);
+      background: rgba(0,230,118,0.06);
+      color: var(--oh-accent);
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .oh-load-more button:hover {
+      background: rgba(0,230,118,0.15);
+      box-shadow: 0 0 20px rgba(0,230,118,0.2);
+      border-color: rgba(0,230,118,0.5);
+    }
+    .oh-branding {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+    }
+    .oh-branding h2 {
+      font-family: var(--font-display); font-size: 1.1rem; font-weight: 900;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      background: var(--oh-gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 14px rgba(0,230,118,0.3));
+    }
+    .oh-branding .oh-sub {
+      font-family: var(--font-mono); font-size: 0.62rem; color: var(--oh-dim);
+      letter-spacing: 0.06em;
+    }
+    @media (max-width: 768px) {
+      .oh-stats { grid-template-columns: repeat(3, 1fr); }
+      .oh-table .td-type { display: none; }
+    }
+    @media (max-width: 480px) {
+      .oh-stats { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -730,6 +882,7 @@
       <div class="nav-tabs">
         <button class="nav-tab active" data-page="bitmap">Bitmap</button>
         <button class="nav-tab" data-page="brc420">BRC-420</button>
+        <button class="nav-tab" data-page="ordhub">OrdHub</button>
       </div>
       <div class="topnav__links">
         <a class="topnav__cta" href="https://oodinals.com" target="_blank" rel="noopener">
@@ -776,6 +929,34 @@
             <div id="visualizer"></div>
             <div class="viz-tooltip" id="vizTooltip"></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- ── ORDHUB PAGE ──────────────────────────────── -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="page" id="pageOrdhub">
+      <div class="page-hero">
+        <div class="oh-branding">
+          <h2>OrdHub</h2>
+          <span class="oh-sub">Code Inscription Library · Every program ever written to Bitcoin</span>
+        </div>
+        <div class="oh-stats" id="ohStats"><div class="empty" style="grid-column:1/-1;color:var(--oh-dim)">Loading…</div></div>
+        <div class="search" style="margin-top:8px">
+          <input type="text" id="ohSearch" placeholder="Search by inscription ID…" />
+          <button id="ohSearchBtn">Search</button>
+        </div>
+      </div>
+      <div class="page-body" style="padding: 0 1.5rem 12px;">
+        <div class="oh-results-header" id="ohResultsHeader"></div>
+        <div style="flex:1 1 0;min-height:0;overflow-y:auto;" id="ohScrollArea">
+          <table class="oh-table">
+            <thead><tr><th>#</th><th>Inscription ID</th><th>Language</th><th class="td-type">Content-Type</th><th>Size</th><th>Block</th></tr></thead>
+            <tbody id="ohBody"></tbody>
+          </table>
+          <div class="oh-load-more" id="ohLoadMore" style="display:none"><button onclick="ohRenderMore()">Load More</button></div>
+          <div class="empty" id="ohEmpty" style="padding:40px 0">Select a language above to browse code inscriptions</div>
         </div>
       </div>
     </div>
@@ -1447,6 +1628,162 @@
       currentDeployGallery = null;
       currentDeployEntry = null;
     }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* ── ORDHUB PAGE LOGIC ────────────────────────────── */
+    /* ══════════════════════════════════════════════════════ */
+    var ohSummary = null;
+    var ohDataCache = {};      // lang -> array of inscriptions
+    var ohCurrentLang = null;
+    var ohFiltered = [];       // current filtered list
+    var ohPageShown = 0;
+    var ohPageSize = 100;
+    var ohLoaded = false;
+
+    var LANG_ICONS = {
+      javascript: 'JS', css: 'CSS', python: 'PY', solidity: 'SOL',
+      typescript: 'TS', shell: 'SH', wasm: 'WASM', html: 'HTML'
+    };
+
+    async function ohLoadSummary() {
+      if (ohSummary) return;
+      try {
+        try { ohSummary = await fetchJson('./code-summary.json'); }
+        catch(e) { ohSummary = await fetchJson(RAW_GH + 'code-summary.json'); }
+      } catch(e) {
+        $('ohStats').innerHTML = '<div class="empty" style="grid-column:1/-1;color:var(--oh-dim)">Failed to load summary</div>';
+        return;
+      }
+      ohRenderStats();
+    }
+
+    function ohRenderStats() {
+      if (!ohSummary) return;
+      var langs = ohSummary.languages.filter(function(l) { return l.language !== 'html'; });
+      var nonHtmlTotal = langs.reduce(function(s, l) { return s + l.count; }, 0);
+
+      var html = '<div class="oh-stat' + (!ohCurrentLang ? ' active' : '') + '" onclick="ohSelectLang(null)">' +
+        '<span class="oh-lang">All Code</span><b>' + fmt(nonHtmlTotal) + '</b></div>';
+      langs.forEach(function(l) {
+        var icon = LANG_ICONS[l.language] || l.language.toUpperCase();
+        html += '<div class="oh-stat' + (ohCurrentLang === l.language ? ' active' : '') + '" onclick="ohSelectLang(\'' + l.language + '\')">' +
+          '<span class="oh-lang">' + icon + '</span><b>' + fmt(l.count) + '</b></div>';
+      });
+      $('ohStats').innerHTML = html;
+    }
+
+    async function ohLoadLang(lang) {
+      if (ohDataCache[lang]) return ohDataCache[lang];
+      var file = 'code-' + lang + '.json';
+      var data;
+      try { data = await fetchJson('./' + file); }
+      catch(e) { data = await fetchJson(RAW_GH + file); }
+      ohDataCache[lang] = data.inscriptions || [];
+      return ohDataCache[lang];
+    }
+
+    async function ohSelectLang(lang) {
+      ohCurrentLang = lang;
+      ohRenderStats();
+
+      $('ohBody').innerHTML = '';
+      $('ohEmpty').style.display = 'none';
+      $('ohLoadMore').style.display = 'none';
+      $('ohResultsHeader').innerHTML = '<span>Loading…</span>';
+
+      try {
+        var allItems = [];
+        if (lang) {
+          allItems = await ohLoadLang(lang);
+        } else {
+          // Load all non-HTML languages
+          var langs = ohSummary.languages.filter(function(l) { return l.language !== 'html'; });
+          var promises = langs.map(function(l) { return ohLoadLang(l.language); });
+          var results = await Promise.all(promises);
+          results.forEach(function(items, idx) {
+            items.forEach(function(item) { item._lang = langs[idx].language; });
+            allItems = allItems.concat(items);
+          });
+          allItems.sort(function(a, b) { return b.block - a.block; });
+        }
+
+        // Apply search filter
+        var q = ($('ohSearch').value || '').trim().toLowerCase();
+        if (q) {
+          allItems = allItems.filter(function(item) {
+            return item.id.toLowerCase().indexOf(q) >= 0 ||
+              (item.type && item.type.toLowerCase().indexOf(q) >= 0);
+          });
+        }
+
+        ohFiltered = allItems;
+        ohPageShown = 0;
+        ohRenderMore();
+      } catch(err) {
+        $('ohResultsHeader').innerHTML = '<span style="color:#ff5252">Error: ' + (err && err.message || err) + '</span>';
+      }
+    }
+
+    function ohRenderMore() {
+      var tbody = $('ohBody');
+      var start = ohPageShown;
+      var end = Math.min(start + ohPageSize, ohFiltered.length);
+
+      var langLabel = ohCurrentLang ? (LANG_ICONS[ohCurrentLang] || ohCurrentLang.toUpperCase()) : 'All Code';
+      $('ohResultsHeader').innerHTML = '<span>Showing <b>' + fmt(Math.min(end, ohFiltered.length)) + '</b> of <b>' + fmt(ohFiltered.length) + '</b> ' + langLabel + ' inscriptions</span>';
+
+      if (ohFiltered.length === 0) {
+        $('ohEmpty').style.display = '';
+        $('ohEmpty').textContent = 'No inscriptions found.';
+        $('ohLoadMore').style.display = 'none';
+        return;
+      }
+      $('ohEmpty').style.display = 'none';
+
+      for (var i = start; i < end; i++) {
+        var item = ohFiltered[i];
+        var lang = item._lang || ohCurrentLang || '';
+        var icon = LANG_ICONS[lang] || lang.toUpperCase();
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + (i + 1) + '</td>' +
+          '<td class="td-id"><a href="https://ordinals.com/inscription/' + item.id + '" target="_blank" title="' + item.id + '">' + trunc(item.id, 14, 8) + '</a></td>' +
+          '<td><span class="oh-lang-badge">' + icon + '</span></td>' +
+          '<td class="td-type"><span class="oh-type-badge" title="' + escHtml(item.type || '') + '">' + escHtml(item.type || '—') + '</span></td>' +
+          '<td>' + (item.size ? (item.size > 1024 ? (item.size / 1024).toFixed(1) + ' KB' : item.size + ' B') : '—') + '</td>' +
+          '<td>' + fmt(item.block) + '</td>';
+        tbody.appendChild(tr);
+      }
+
+      ohPageShown = end;
+      $('ohLoadMore').style.display = end < ohFiltered.length ? '' : 'none';
+      var btn = $('ohLoadMore').querySelector('button');
+      if (btn) btn.textContent = 'Load More (' + fmt(ohFiltered.length - end) + ' remaining)';
+    }
+
+    // Search handler
+    var ohSearchTimer = null;
+    $('ohSearch').addEventListener('input', function() {
+      clearTimeout(ohSearchTimer);
+      ohSearchTimer = setTimeout(function() {
+        ohSelectLang(ohCurrentLang);
+      }, 300);
+    });
+    $('ohSearchBtn').addEventListener('click', function() {
+      ohSelectLang(ohCurrentLang);
+    });
+
+    // Auto-load when switching to OrdHub tab
+    var origSwitchPage = switchPage;
+    switchPage = function(name) {
+      origSwitchPage(name);
+      if (name === 'ordhub' && !ohLoaded) {
+        ohLoaded = true;
+        ohLoadSummary().then(function() {
+          ohSelectLang(null);
+        });
+      }
+    };
   </script>
 </body>
 </html>
