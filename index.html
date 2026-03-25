@@ -833,6 +833,93 @@
       font-size: 0.58rem; color: var(--oh-dim); max-width: 160px;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    /* Code preview card */
+    .oh-card {
+      border: 1px solid var(--oh-border);
+      border-radius: var(--radius-lg);
+      background: var(--oh-card);
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: var(--ease);
+    }
+    .oh-card:hover {
+      border-color: rgba(0,230,118,0.3);
+      box-shadow: var(--oh-glow-sm);
+    }
+    .oh-card__header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: var(--ease);
+    }
+    .oh-card__header:hover { background: rgba(0,230,118,0.03); }
+    .oh-card__num {
+      font-family: var(--font-mono); font-size: 0.62rem; color: var(--oh-dim);
+      min-width: 32px;
+    }
+    .oh-card__id {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      min-width: 0;
+    }
+    .oh-card__id a { color: var(--oh-accent); text-decoration: none; }
+    .oh-card__id a:hover { text-decoration: underline; }
+    .oh-card__meta {
+      display: flex; gap: 8px; align-items: center;
+      margin-left: auto; flex-shrink: 0;
+    }
+    .oh-card__size {
+      font-family: var(--font-mono); font-size: 0.6rem; color: var(--oh-dim);
+    }
+    .oh-card__block {
+      font-family: var(--font-mono); font-size: 0.6rem; color: var(--oh-dim);
+    }
+    .oh-card__toggle {
+      color: var(--oh-dim); font-size: 12px; transition: transform 0.2s; flex-shrink: 0;
+    }
+    .oh-card.open .oh-card__toggle { transform: rotate(90deg); }
+    .oh-card__body {
+      display: none;
+      border-top: 1px solid var(--oh-border);
+    }
+    .oh-card.open .oh-card__body { display: block; }
+    .oh-card__code {
+      padding: 12px 14px;
+      font-family: var(--font-mono); font-size: 0.68rem;
+      line-height: 1.6;
+      color: var(--oh-text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 250px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.3);
+    }
+    .oh-card__code mark {
+      background: rgba(0,230,118,0.25); color: #fff;
+      padding: 1px 2px; border-radius: 2px;
+    }
+    .oh-card__actions {
+      display: flex; gap: 8px; padding: 8px 14px;
+      border-top: 1px solid rgba(10,48,24,0.3);
+    }
+    .oh-card__actions a, .oh-card__actions button {
+      font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600;
+      padding: 4px 12px; border-radius: 6px;
+      border: 1px solid var(--oh-border); background: rgba(0,230,118,0.06);
+      color: var(--oh-accent); cursor: pointer; text-decoration: none;
+      transition: var(--ease);
+    }
+    .oh-card__actions a:hover, .oh-card__actions button:hover {
+      background: rgba(0,230,118,0.15); border-color: rgba(0,230,118,0.4);
+    }
+    .oh-search-hint {
+      font-family: var(--font-mono); font-size: 0.6rem; color: var(--oh-dim);
+      margin-top: 5px; letter-spacing: 0.03em;
+    }
+    .oh-search-hint kbd {
+      padding: 1px 5px; border-radius: 3px;
+      border: 1px solid var(--oh-border); background: rgba(0,230,118,0.06);
+      font-size: 0.58rem;
+    }
     .oh-load-more {
       display: flex; justify-content: center; padding: 1rem 0;
     }
@@ -867,10 +954,13 @@
     }
     @media (max-width: 768px) {
       .oh-stats { grid-template-columns: repeat(3, 1fr); }
-      .oh-table .td-type { display: none; }
+      .oh-card__block { display: none; }
+      .oh-card__id { font-size: 0.65rem; }
     }
     @media (max-width: 480px) {
       .oh-stats { grid-template-columns: repeat(2, 1fr); }
+      .oh-card__header { padding: 8px 10px; gap: 6px; }
+      .oh-card__code { font-size: 0.6rem; max-height: 200px; }
     }
   </style>
 </head>
@@ -944,19 +1034,17 @@
         </div>
         <div class="oh-stats" id="ohStats"><div class="empty" style="grid-column:1/-1;color:var(--oh-dim)">Loading…</div></div>
         <div class="search" style="margin-top:8px">
-          <input type="text" id="ohSearch" placeholder="Search by inscription ID…" />
+          <input type="text" id="ohSearch" placeholder="Search code: function names, library names, keywords…" />
           <button id="ohSearchBtn">Search</button>
         </div>
+        <div class="oh-search-hint">Search through source code previews (first 512 chars). Try: <kbd>pragma solidity</kbd> <kbd>ERC721</kbd> <kbd>addEventListener</kbd> <kbd>import requests</kbd> <kbd>fuzz_target</kbd></div>
       </div>
       <div class="page-body" style="padding: 0 1.5rem 12px;">
         <div class="oh-results-header" id="ohResultsHeader"></div>
         <div style="flex:1 1 0;min-height:0;overflow-y:auto;" id="ohScrollArea">
-          <table class="oh-table">
-            <thead><tr><th>#</th><th>Inscription ID</th><th>Language</th><th class="td-type">Content-Type</th><th>Size</th><th>Block</th></tr></thead>
-            <tbody id="ohBody"></tbody>
-          </table>
+          <div id="ohCards"></div>
           <div class="oh-load-more" id="ohLoadMore" style="display:none"><button onclick="ohRenderMore()">Load More</button></div>
-          <div class="empty" id="ohEmpty" style="padding:40px 0">Select a language above to browse code inscriptions</div>
+          <div class="empty" id="ohEmpty" style="padding:40px 0">Select a language or search for code inscriptions</div>
         </div>
       </div>
     </div>
@@ -1637,8 +1725,9 @@
     var ohCurrentLang = null;
     var ohFiltered = [];       // current filtered list
     var ohPageShown = 0;
-    var ohPageSize = 100;
+    var ohPageSize = 50;
     var ohLoaded = false;
+    var ohSearchQuery = '';    // current search term
 
     var LANG_ICONS = {
       javascript: 'JS', css: 'CSS', python: 'PY', solidity: 'SOL',
@@ -1682,11 +1771,21 @@
       return ohDataCache[lang];
     }
 
+    // Highlight search matches in text
+    function ohHighlight(text, query) {
+      if (!query || !text) return escHtml(text || '');
+      var escaped = escHtml(text);
+      var qEsc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      try {
+        return escaped.replace(new RegExp('(' + qEsc + ')', 'gi'), '<mark>$1</mark>');
+      } catch(e) { return escaped; }
+    }
+
     async function ohSelectLang(lang) {
       ohCurrentLang = lang;
       ohRenderStats();
 
-      $('ohBody').innerHTML = '';
+      $('ohCards').innerHTML = '';
       $('ohEmpty').style.display = 'none';
       $('ohLoadMore').style.display = 'none';
       $('ohResultsHeader').innerHTML = '<span>Loading…</span>';
@@ -1707,12 +1806,21 @@
           allItems.sort(function(a, b) { return b.block - a.block; });
         }
 
-        // Apply search filter
+        // Apply search filter — search through head, id, and type
         var q = ($('ohSearch').value || '').trim().toLowerCase();
+        ohSearchQuery = q;
         if (q) {
           allItems = allItems.filter(function(item) {
-            return item.id.toLowerCase().indexOf(q) >= 0 ||
+            return (item.head && item.head.toLowerCase().indexOf(q) >= 0) ||
+              item.id.toLowerCase().indexOf(q) >= 0 ||
               (item.type && item.type.toLowerCase().indexOf(q) >= 0);
+          });
+          // Sort: head matches first (most relevant)
+          allItems.sort(function(a, b) {
+            var aHead = a.head && a.head.toLowerCase().indexOf(q) >= 0 ? 1 : 0;
+            var bHead = b.head && b.head.toLowerCase().indexOf(q) >= 0 ? 1 : 0;
+            if (bHead !== aHead) return bHead - aHead;
+            return b.block - a.block;
           });
         }
 
@@ -1724,17 +1832,31 @@
       }
     }
 
+    function ohToggleCard(el) {
+      el.closest('.oh-card').classList.toggle('open');
+    }
+
+    function ohCopyId(id, btn) {
+      navigator.clipboard.writeText(id).then(function() {
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'Copy ID'; }, 1500);
+      });
+    }
+
     function ohRenderMore() {
-      var tbody = $('ohBody');
+      var container = $('ohCards');
       var start = ohPageShown;
       var end = Math.min(start + ohPageSize, ohFiltered.length);
+      var q = ohSearchQuery;
 
       var langLabel = ohCurrentLang ? (LANG_ICONS[ohCurrentLang] || ohCurrentLang.toUpperCase()) : 'All Code';
-      $('ohResultsHeader').innerHTML = '<span>Showing <b>' + fmt(Math.min(end, ohFiltered.length)) + '</b> of <b>' + fmt(ohFiltered.length) + '</b> ' + langLabel + ' inscriptions</span>';
+      var searchNote = q ? ' matching <b>\u201c' + escHtml(q) + '\u201d</b>' : '';
+      $('ohResultsHeader').innerHTML = '<span><b>' + fmt(ohFiltered.length) + '</b> ' + langLabel + ' inscriptions' + searchNote + '</span>' +
+        '<span>Showing ' + fmt(Math.min(end, ohFiltered.length)) + '</span>';
 
       if (ohFiltered.length === 0) {
         $('ohEmpty').style.display = '';
-        $('ohEmpty').textContent = 'No inscriptions found.';
+        $('ohEmpty').textContent = q ? 'No code inscriptions match \u201c' + q + '\u201d' : 'No inscriptions found.';
         $('ohLoadMore').style.display = 'none';
         return;
       }
@@ -1744,15 +1866,33 @@
         var item = ohFiltered[i];
         var lang = item._lang || ohCurrentLang || '';
         var icon = LANG_ICONS[lang] || lang.toUpperCase();
-        var tr = document.createElement('tr');
-        tr.innerHTML =
-          '<td>' + (i + 1) + '</td>' +
-          '<td class="td-id"><a href="https://ordinals.com/inscription/' + item.id + '" target="_blank" title="' + item.id + '">' + trunc(item.id, 14, 8) + '</a></td>' +
-          '<td><span class="oh-lang-badge">' + icon + '</span></td>' +
-          '<td class="td-type"><span class="oh-type-badge" title="' + escHtml(item.type || '') + '">' + escHtml(item.type || '—') + '</span></td>' +
-          '<td>' + (item.size ? (item.size > 1024 ? (item.size / 1024).toFixed(1) + ' KB' : item.size + ' B') : '—') + '</td>' +
-          '<td>' + fmt(item.block) + '</td>';
-        tbody.appendChild(tr);
+        var sizeStr = item.size ? (item.size > 1024 ? (item.size / 1024).toFixed(1) + ' KB' : item.size + ' B') : '';
+        var headHtml = item.head ? ohHighlight(item.head, q) : '<span style="color:var(--oh-dim)">No preview available</span>';
+        var autoOpen = q && item.head && item.head.toLowerCase().indexOf(q) >= 0;
+
+        var card = document.createElement('div');
+        card.className = 'oh-card' + (autoOpen ? ' open' : '');
+        card.innerHTML =
+          '<div class="oh-card__header" onclick="ohToggleCard(this)">' +
+            '<span class="oh-card__num">' + (i + 1) + '</span>' +
+            '<span class="oh-lang-badge">' + icon + '</span>' +
+            '<span class="oh-card__id"><a href="https://ordinals.com/inscription/' + item.id + '" target="_blank" title="' + item.id + '" onclick="event.stopPropagation()">' + trunc(item.id, 14, 8) + '</a></span>' +
+            '<span class="oh-card__meta">' +
+              (sizeStr ? '<span class="oh-card__size">' + sizeStr + '</span>' : '') +
+              '<span class="oh-card__block">Block ' + fmt(item.block) + '</span>' +
+            '</span>' +
+            '<span class="oh-card__toggle">▶</span>' +
+          '</div>' +
+          '<div class="oh-card__body">' +
+            '<div class="oh-card__code">' + headHtml + '</div>' +
+            '<div class="oh-card__actions">' +
+              '<a href="https://ordinals.com/content/' + item.id + '" target="_blank">View Full Source</a>' +
+              '<a href="https://ordinals.com/inscription/' + item.id + '" target="_blank">Inscription</a>' +
+              '<button onclick="ohCopyId(\'' + item.id.replace(/'/g, "\\'") + '\', this)">Copy ID</button>' +
+              '<span class="oh-type-badge" title="' + escHtml(item.type || '') + '">' + escHtml(item.type || '') + '</span>' +
+            '</div>' +
+          '</div>';
+        container.appendChild(card);
       }
 
       ohPageShown = end;
@@ -1763,15 +1903,15 @@
 
     // Search handler
     var ohSearchTimer = null;
-    $('ohSearch').addEventListener('input', function() {
+    function ohDoSearch() {
       clearTimeout(ohSearchTimer);
       ohSearchTimer = setTimeout(function() {
         ohSelectLang(ohCurrentLang);
       }, 300);
-    });
-    $('ohSearchBtn').addEventListener('click', function() {
-      ohSelectLang(ohCurrentLang);
-    });
+    }
+    $('ohSearch').addEventListener('input', ohDoSearch);
+    $('ohSearch').addEventListener('keydown', function(e) { if (e.key === 'Enter') { clearTimeout(ohSearchTimer); ohSelectLang(ohCurrentLang); } });
+    $('ohSearchBtn').addEventListener('click', function() { clearTimeout(ohSearchTimer); ohSelectLang(ohCurrentLang); });
 
     // Auto-load when switching to OrdHub tab
     var origSwitchPage = switchPage;
