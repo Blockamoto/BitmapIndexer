@@ -180,6 +180,36 @@
     .topnav__cta svg { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
     .topnav__cta-label { opacity: 0.65; font-weight: 500; }
     .topnav__cta-site { font-weight: 800; color: #fff; }
+
+    /* ── Hamburger button (hidden on desktop) ────────── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      width: 32px; height: 32px;
+      background: none; border: none; cursor: pointer;
+      padding: 4px; margin-right: 8px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hamburger span {
+      display: block; width: 20px; height: 2px;
+      background: #8899aa; border-radius: 2px;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    /* ── Mobile nav overlay ──────────────────────────── */
+    .nav-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+    .nav-overlay.show { display: block; }
+
     @keyframes ctaPulse {
       0%, 100% { box-shadow: 0 0 14px rgba(0,212,255,0.12), inset 0 0 12px rgba(0,212,255,0.04); }
       50% { box-shadow: 0 0 22px rgba(0,212,255,0.22), inset 0 0 16px rgba(0,212,255,0.06); }
@@ -726,10 +756,36 @@
        RESPONSIVE
        =========================================================== */
     @media (max-width: 768px) {
-      .topnav { padding: 0 1rem; }
-      .topnav h1 { font-size: 0.8rem; margin-right: 0.8rem; }
+      .topnav { padding: 0 1rem; flex-wrap: wrap; height: auto; min-height: 56px; }
+      .topnav h1 { font-size: 0.8rem; margin-right: auto; }
       .topnav .meta { display: none; }
-      .topnav__links { margin-left: auto; }
+
+      /* Show hamburger, hide desktop nav items */
+      .hamburger { display: flex; order: 2; }
+      .nav-tabs {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        order: 10;
+        padding: 8px 0 12px;
+        gap: 2px;
+        border-top: 1px solid #10102a;
+      }
+      .nav-tabs.open { display: flex; }
+      .nav-tab {
+        width: 100%;
+        text-align: left;
+        padding: 10px 12px;
+        font-size: 0.78rem;
+        border-radius: 6px;
+      }
+      .topnav__links {
+        order: 3;
+        margin-left: 0; margin-right: 0;
+      }
+      .topnav__cta { padding: 5px 12px; font-size: 0.58rem; }
+      .topnav__cta-label { display: none; }
+
       .bm-content { padding: 8px 1rem 10px; }
       .brc-stats { grid-template-columns: repeat(2, 1fr); }
       .deploy-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
@@ -969,7 +1025,10 @@
     <!-- ── Top navigation ─────────────────────────────── -->
     <div class="topnav">
       <h1>Bitmap420</h1>
-      <div class="nav-tabs">
+      <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-tabs" id="navTabs">
         <button class="nav-tab active" data-page="bitmap">Bitmap</button>
         <button class="nav-tab" data-page="brc420">BRC-420</button>
         <button class="nav-tab" data-page="ordhub">OrdHub</button>
@@ -983,6 +1042,7 @@
       </div>
       <div class="meta" id="heights"></div>
     </div>
+    <div class="nav-overlay" id="navOverlay"></div>
 
     <!-- ══════════════════════════════════════════════════ -->
     <!-- ── BITMAP PAGE ──────────────────────────────── -->
